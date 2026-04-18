@@ -11,3 +11,4 @@ Thumbs.db
 npm-debug.log*
 .vite/
 .cache/
+*.zip
