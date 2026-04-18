@@ -108,6 +108,7 @@ Every UX decision must be evaluated against "would AHA Quiz do this?"
 - Stage 3 Presentation — done: Miami-restrained monochrome with amber accent, Space Grotesk + Inter, glass morphism.
 - Stage 4 Polish — aurora bg ✓, sounds ✓, share via platform adapter ✓, LEVEL+XP+coins progression ✓, iPhone safe-area ✓, progressive difficulty (easy×4 → medium×4 → hard×4) with score multipliers (×1 / ×1.25 / ×1.5) and difficulty badge — HQ Trivia pattern — done ✓, Challenge-friends foundation (URL param + banner + personalized message) ✓. Still TODO: analytics stub, rewarded-ad hooks for 2x coins/XP.
 - Stage 4.5 Pre-deploy prep: .gitignore, README.md, production build verified, initial commit created locally. No remote yet.
+- Stage 4.5 GitHub push: repo at https://github.com/spavlenko020-ship-it/quiz-daily, branch main, first push done.
 
 ## Things we previously got wrong (and corrected)
 - Pluto listed as smallest planet — Pluto was reclassified in 2006. Replaced distractor with Saturn.
