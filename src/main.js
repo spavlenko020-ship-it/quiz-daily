@@ -1,4 +1,3 @@
-import platform from './platform/web.js';
 import { Quiz } from './game/quiz.js';
 import { renderQuizScreen, renderFinishScreen } from './game/screens.js';
 import { renderHomeScreen } from './game/home.js';
@@ -11,6 +10,26 @@ import { renderSoundToggle } from './ui/soundToggle.js';
 import { renderBackground } from './ui/background.js';
 
 let app;
+let platform;
+
+async function detectPlatform() {
+  if (typeof FBInstant === 'undefined') {
+    const m = await import('./platform/web.js');
+    return m.default;
+  }
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error('FBInstant init timeout')), 3000)
+  );
+  try {
+    await Promise.race([FBInstant.initializeAsync(), timeout]);
+    const m = await import('./platform/facebook.js');
+    return m.default;
+  } catch (e) {
+    console.warn('[platform] FB detection failed, using web fallback:', e && e.message);
+    const m = await import('./platform/web.js');
+    return m.default;
+  }
+}
 
 function buildEmojiGrid(history) {
   return history.map(h => h.isCorrect ? '🟩' : '🟥').join('');
@@ -213,7 +232,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   initLanguage();
   parseIncomingChallenge();
   renderBackground();
+  platform = await detectPlatform();
   await platform.init();
+  console.log('[platform] using adapter:', platform.name);
   app = document.querySelector('#app');
   initAudio();
   renderLangSwitcher();
