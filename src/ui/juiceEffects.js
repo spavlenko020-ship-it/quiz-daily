@@ -10,6 +10,13 @@ import { playWhoosh } from './sounds.js';
 
 const STYLE_ID = 'qd-juice-effects-styles';
 
+// Stage 7.4b: mobile GPUs can't keep up with 200-particle bursts — scale
+// particle counts to 50% and shorten `ticks` (per-particle lifetime) so we
+// stay inside the mobile frame budget without changing animation timings.
+const isMobile = typeof navigator !== 'undefined'
+  && /Android|iPhone|iPad|iPod|Mobile|IEMobile/i.test(navigator.userAgent);
+function scaleCount(n) { return isMobile ? Math.ceil(n * 0.5) : n; }
+
 // DEBUG flag is statically replaced by Vite so the body of `if (DEBUG)`
 // branches is dead-code-eliminated in production — no console.log noise ships.
 const DEBUG = import.meta.env.DEV;
@@ -360,15 +367,15 @@ export function triggerConfetti(container, variant = 'win') {
 
   if (variant === 'complete') {
     safeConfetti({
-      particleCount: 60, spread: 75, origin: { y: 0.65 },
-      colors: ['#10B981','#FFD700','#FFFFFF'], ticks: 200, startVelocity: 35
+      particleCount: scaleCount(60), spread: 75, origin: { y: 0.65 },
+      colors: ['#10B981','#FFD700','#FFFFFF'], ticks: isMobile ? 150 : 200, startVelocity: 35
     });
     setTimeout(() => safeConfetti({
-      particleCount: 30, spread: 60, origin: { x: 0.3, y: 0.7 },
+      particleCount: scaleCount(30), spread: 60, origin: { x: 0.3, y: 0.7 },
       angle: 75, colors: ['#10B981','#FFD700'], startVelocity: 35
     }), 250);
     setTimeout(() => safeConfetti({
-      particleCount: 30, spread: 60, origin: { x: 0.7, y: 0.7 },
+      particleCount: scaleCount(30), spread: 60, origin: { x: 0.7, y: 0.7 },
       angle: 105, colors: ['#10B981','#FFD700'], startVelocity: 35
     }), 500);
     return;
@@ -376,15 +383,15 @@ export function triggerConfetti(container, variant = 'win') {
 
   if (variant === 'win') {
     safeConfetti({
-      particleCount: 80, spread: 70, origin: { y: 0.6 },
-      colors: ['#FFD700','#10B981','#FFFFFF'], ticks: 250
+      particleCount: scaleCount(80), spread: 70, origin: { y: 0.6 },
+      colors: ['#FFD700','#10B981','#FFFFFF'], ticks: isMobile ? 180 : 250
     });
     setTimeout(() => safeConfetti({
-      particleCount: 50, spread: 100, origin: { x: 0, y: 0.7 },
+      particleCount: scaleCount(50), spread: 100, origin: { x: 0, y: 0.7 },
       angle: 60, colors: ['#FFD700','#F59E0B'], startVelocity: 45
     }), 200);
     setTimeout(() => safeConfetti({
-      particleCount: 50, spread: 100, origin: { x: 1, y: 0.7 },
+      particleCount: scaleCount(50), spread: 100, origin: { x: 1, y: 0.7 },
       angle: 120, colors: ['#FFD700','#F59E0B'], startVelocity: 45
     }), 400);
     return;
@@ -392,29 +399,29 @@ export function triggerConfetti(container, variant = 'win') {
 
   if (variant === 'record') {
     safeConfetti({
-      particleCount: 150, spread: 160, origin: { y: 0.3 },
+      particleCount: scaleCount(150), spread: 160, origin: { y: 0.3 },
       colors: ['#FFD700','#F59E0B','#FBBF24','#FFFFFF'],
-      gravity: 0.65, startVelocity: 40, ticks: 300
+      gravity: 0.65, startVelocity: 40, ticks: isMobile ? 220 : 300
     });
     return;
   }
 
   if (variant === 'perfect') {
     safeConfetti({
-      particleCount: 200, spread: 360, origin: { x: 0.5, y: 0.5 },
+      particleCount: scaleCount(200), spread: 360, origin: { x: 0.5, y: 0.5 },
       colors: ['#FF006E','#FB5607','#FFBE0B','#8338EC','#3A86FF','#06FFA5'],
-      startVelocity: 35, ticks: 250
+      startVelocity: 35, ticks: isMobile ? 180 : 250
     });
     setTimeout(() => safeConfetti({
-      particleCount: 80, spread: 90, origin: { x: 0, y: 0.6 },
+      particleCount: scaleCount(80), spread: 90, origin: { x: 0, y: 0.6 },
       angle: 60, colors: ['#FFBE0B','#FB5607']
     }), 400);
     setTimeout(() => safeConfetti({
-      particleCount: 80, spread: 90, origin: { x: 1, y: 0.6 },
+      particleCount: scaleCount(80), spread: 90, origin: { x: 1, y: 0.6 },
       angle: 120, colors: ['#8338EC','#3A86FF']
     }), 800);
     setTimeout(() => safeConfetti({
-      particleCount: 100, spread: 180, origin: { y: 0.3 },
+      particleCount: scaleCount(100), spread: 180, origin: { y: 0.3 },
       shapes: ['star'], colors: ['#FFD700','#FFFFFF'], scalar: 1.2
     }), 1200);
     return;
@@ -529,12 +536,12 @@ export function unlockGoldenFlash() {
 export function unlockParticleBurst() {
   injectStyles();
   safeConfetti({
-    particleCount: 100,
+    particleCount: scaleCount(100),
     spread: 360,
     origin: { x: 0.5, y: 0.5 },
     startVelocity: 30,
     gravity: 0.3,
-    ticks: 200,
+    ticks: isMobile ? 150 : 200,
     colors: ['#FFD700','#FFA500','#FF6B35','#F59E0B','#FFFFFF'],
     shapes: ['circle','star']
   });

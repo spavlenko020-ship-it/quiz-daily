@@ -1,3 +1,5 @@
+import { showRewardedAd, showRewardedPopup } from './monetag.js';
+
 // Telegram Mini App platform adapter (Stage 7.4a).
 // SDK loaded via official live CDN in index.html (telegram.org/js/telegram-web-app.js) —
 // NOT vendored locally because initData signing verification on the Telegram
@@ -153,7 +155,11 @@ const platform = {
   },
 
   // --- stubs for Stage 7.5b+ ---
-  async showAd(type) { console.log('[TG] showAd: stubbed, no ad network wired yet'); return false; },
+  async showAd(type) {
+    if (type === 'rewarded') return await showRewardedAd();
+    if (type === 'popup') return await showRewardedPopup();
+    return false;
+  },
   async getLeaderboard() { return []; },
   async saveScore(score) { /* stored server-side in Stage 7.6 (Supabase) */ },
 

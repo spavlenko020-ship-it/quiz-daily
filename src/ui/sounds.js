@@ -1,5 +1,11 @@
 import * as Tone from 'tone';
 
+// Stage 7.4b: mobile speakers run softer than laptop speakers, so the master
+// Tone.Volume is boosted +6 dB on mobile UAs. Only the master node is
+// touched — individual synth voice volumes keep their existing relative mix.
+const isMobile = typeof navigator !== 'undefined'
+  && /Android|iPhone|iPad|iPod|Mobile|IEMobile/i.test(navigator.userAgent);
+
 let sampler = null;
 let membraneSynth = null;
 let metalSynth = null;
@@ -18,7 +24,7 @@ async function setupGraph() {
   if (initialized) return;
   initialized = true;
 
-  masterVol = new Tone.Volume(-4).toDestination();
+  masterVol = new Tone.Volume(isMobile ? 2 : -4).toDestination();
   if (muted) masterVol.mute = true;
 
   try {

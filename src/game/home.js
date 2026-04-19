@@ -6,6 +6,7 @@ import { getFreeDailyQuota, getTodayFreeUsed, hasStreakFreeze, getStreakFreezeAv
 import { QUESTIONS_PER_SESSION } from './quiz.js';
 import { playClick, playWhoosh } from '../ui/sounds.js';
 import { pulseStreakFlame } from '../ui/juiceEffects.js';
+import { armInAppInterstitial } from '../platform/monetag.js';
 
 const STYLE_ID = 'qd-home-styles';
 let lastCallbacks = null;
@@ -750,6 +751,10 @@ function showHomeToast(message) {
 export function renderHomeScreen(container, callbacks = {}) {
   injectHomeStyles();
   clearCountdown();
+  // Stage 7.4b: arm Monetag in-app interstitial on every Home mount. The
+  // helper is idempotent (arms only once per page load), so repeat calls
+  // are free.
+  try { armInAppInterstitial(); } catch (e) { /* swallow */ }
   container.style.background = 'transparent';
   lastCallbacks = callbacks;
 

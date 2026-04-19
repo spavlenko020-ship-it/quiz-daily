@@ -1,3 +1,5 @@
+import { showRewardedAd, showRewardedPopup } from './monetag.js';
+
 function isMobile() {
   return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 }
@@ -25,7 +27,11 @@ const platform = {
     }
     return { via: 'unavailable' };
   },
-  async showAd(type) { return false; },
+  async showAd(type) {
+    if (type === 'rewarded') return await showRewardedAd();
+    if (type === 'popup') return await showRewardedPopup();
+    return false;
+  },
   async getLeaderboard() { return []; },
   getDailyChallengeSeed() {
     const d = new Date();
