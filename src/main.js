@@ -535,5 +535,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
   } catch (e) { /* ignore — fall through to Home */ }
+
+  // Stage 7.3: first-time onboarding. Skipped if the user has already
+  // completed it (or an unclaimed-match resume took priority above).
+  try {
+    if (!localStorage.getItem('quiz_onboarded')) {
+      const { renderOnboarding } = await import('./game/onboarding.js');
+      app.innerHTML = '';
+      renderOnboarding(app, () => showHome(false));
+      return;
+    }
+  } catch (e) { /* storage blocked — fall through to Home */ }
+
   showHome();
 });

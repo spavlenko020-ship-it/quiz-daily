@@ -78,7 +78,7 @@ export const translations = {
     itsATie: "It's a tie.",
     questionCounter: "Question {n} / {total}",
     rewardEarned: "Rewards earned!",
-    watch2xAd: "Watch ad → 2× reward",
+    watch2xAd: "📺 Watch 15s → +{xp} XP · +{coins} 🪙",
     rewardDoubled: "Rewards doubled! 🎉",
     adUnavailable: "Ad not available right now",
     challengeBack: "Challenge {name} Back ⚔️",
@@ -108,7 +108,16 @@ export const translations = {
     onFire: "🔥 ON FIRE!",
     unstoppable: "⚡ UNSTOPPABLE!",
     legendary: "👑 LEGENDARY!",
-    perfectGame: "PERFECT GAME ✨"
+    perfectGame: "PERFECT GAME ✨",
+    onb1Title: "Answer 12 questions",
+    onb1Body: "Tap the correct answer. Speed = more points.",
+    onb2Title: "Keep your streak",
+    onb2Body: "Play daily to grow your streak and unlock rewards.",
+    onb3Title: "Challenge friends",
+    onb3Body: "Play head-to-head matches. Win rewards.",
+    onbNext: "Next",
+    onbPlay: "Play!",
+    onbSkip: "Skip"
   },
   uk: {
     appName: "Щоденний Квіз",
@@ -189,7 +198,7 @@ export const translations = {
     itsATie: "Нічия.",
     questionCounter: "Питання {n} / {total}",
     rewardEarned: "Нагороди отримано!",
-    watch2xAd: "Подивитись рекламу → подвоїти",
+    watch2xAd: "📺 Дивитись 15с → +{xp} XP · +{coins} 🪙",
     rewardDoubled: "Нагорода подвоєна! 🎉",
     adUnavailable: "Реклама зараз недоступна",
     challengeBack: "Викликати {name} знов ⚔️",
@@ -219,7 +228,16 @@ export const translations = {
     onFire: "🔥 У ВОГНІ!",
     unstoppable: "⚡ НЕСПИНЕННИЙ!",
     legendary: "👑 ЛЕГЕНДАРНО!",
-    perfectGame: "ІДЕАЛЬНА ГРА ✨"
+    perfectGame: "ІДЕАЛЬНА ГРА ✨",
+    onb1Title: "12 запитань у раунді",
+    onb1Body: "Тисни правильну відповідь. Швидше = більше очок.",
+    onb2Title: "Тримай серію",
+    onb2Body: "Грай щодня, щоб продовжити серію та відкривати бонуси.",
+    onb3Title: "Викликай друзів",
+    onb3Body: "Грай один на один. Вигравай нагороди.",
+    onbNext: "Далі",
+    onbPlay: "Грати!",
+    onbSkip: "Пропустити"
   },
   no: {
     appName: "Daglig Quiz",
@@ -300,7 +318,7 @@ export const translations = {
     itsATie: "Uavgjort.",
     questionCounter: "Spørsmål {n} / {total}",
     rewardEarned: "Belønninger oppnådd!",
-    watch2xAd: "Se reklame → 2× belønning",
+    watch2xAd: "📺 Se 15s → +{xp} XP · +{coins} 🪙",
     rewardDoubled: "Belønninger doblet! 🎉",
     adUnavailable: "Annonse ikke tilgjengelig",
     challengeBack: "Utfordre {name} igjen ⚔️",
@@ -330,7 +348,16 @@ export const translations = {
     onFire: "🔥 I GANG!",
     unstoppable: "⚡ USTOPPELIG!",
     legendary: "👑 LEGENDARISK!",
-    perfectGame: "PERFEKT SPILL ✨"
+    perfectGame: "PERFEKT SPILL ✨",
+    onb1Title: "Svar på 12 spørsmål",
+    onb1Body: "Trykk på riktig svar. Raskere = flere poeng.",
+    onb2Title: "Hold streaken",
+    onb2Body: "Spill daglig for å bygge streak og låse opp belønninger.",
+    onb3Title: "Utfordre venner",
+    onb3Body: "Spill mot hverandre. Vinn belønninger.",
+    onbNext: "Neste",
+    onbPlay: "Spill!",
+    onbSkip: "Hopp over"
   }
 };
 

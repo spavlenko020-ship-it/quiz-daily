@@ -394,7 +394,7 @@ export function renderMatchResult(container, match, currentPlayerId, platform, c
     const adBtn = document.createElement('button');
     adBtn.type = 'button';
     adBtn.className = 'qd-matchresult-ad';
-    adBtn.textContent = `📺  ${t('watch2xAd')}`;
+    adBtn.textContent = t('watch2xAd', { xp: reward.xp * 2, coins: reward.coins * 2 });
     let adClicked = false;
     adBtn.addEventListener('click', async () => {
       if (adClicked) return;

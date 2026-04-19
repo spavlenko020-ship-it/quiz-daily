@@ -155,58 +155,61 @@ function injectHomeStyles() {
       100% { transform: scale(1);    text-shadow: 0 0 8px rgba(255, 213, 79, 0.4); }
     }
 
-    .qd-home-stats {
+    /* Stage 7.3: compact stat chip row — replaces the old 2-column card grid
+       to reclaim ~80px of above-fold space on 360×640. */
+    .qd-home-chiprow {
+      margin-top: 8px;
       display: flex;
-      gap: 12px;
-      margin-top: 1rem;
-      width: 100%;
+      flex-wrap: wrap;
       justify-content: center;
-    }
-    .qd-home-stat {
-      flex: 1;
-      max-width: 160px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid ${c.stroke};
-      border-radius: ${r.md};
-      padding: 14px 12px;
-      text-align: center;
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      display: flex;
-      flex-direction: column;
       align-items: center;
+      gap: 8px;
     }
-    .qd-home-stat-icon { font-size: 1.4rem; line-height: 1; }
-    .qd-home-stat-icon.qd-home-stat-icon-dim { color: ${c.textMuted}; opacity: 0.6; }
-    .qd-home-stat-value {
-      font-family: ${theme.fonts.display};
-      font-weight: 700;
-      font-size: 1.6rem;
-      color: ${c.accent};
-      margin-top: 4px;
+    .qd-home-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: ${c.text};
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       line-height: 1;
     }
-    .qd-home-stat-value.qd-home-stat-value-dim { color: ${c.textMuted}; }
-    .qd-home-stat-label {
-      font-size: 0.65rem;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: ${c.textMuted};
-      margin-top: 4px;
-      font-weight: 600;
+    .qd-home-chip.is-dim { opacity: 0.55; }
+    .qd-home-chip-ico { font-size: 0.92rem; line-height: 1; display: inline-block; }
+    .qd-home-chip-val { font-family: ${theme.fonts.display}; font-weight: 700; color: ${c.accent}; font-variant-numeric: tabular-nums; }
+    .qd-home-chip-freeze {
+      cursor: pointer;
+      background: rgba(79,195,255,0.1);
+      border-color: rgba(79,195,255,0.4);
+      -webkit-tap-highlight-color: transparent;
     }
-    .qd-home-stat-value.qd-home-streak-inline {
-      font-size: 1.15rem;
-      letter-spacing: 0.01em;
-      margin-top: 6px;
+    .qd-home-chip-freeze:hover {
+      background: rgba(79,195,255,0.18);
+      border-color: rgba(79,195,255,0.65);
+    }
+
+    /* Inbox-card mood chip (green=you lead, amber=they lead, red=close game) */
+    .qd-inbox-mood {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-left: 8px;
+      line-height: 1.3;
+      vertical-align: middle;
       white-space: nowrap;
     }
-    .qd-home-stat-sub {
-      font-size: 0.6rem;
-      color: ${c.textFaint};
-      margin-top: 2px;
-      font-weight: 500;
-    }
+    .qd-inbox-mood.is-lead   { background: rgba(16,185,129,0.18); color: #10B981; border: 1px solid rgba(16,185,129,0.45); }
+    .qd-inbox-mood.is-behind { background: rgba(245,158,11,0.18); color: #F59E0B; border: 1px solid rgba(245,158,11,0.45); }
+    .qd-inbox-mood.is-close  { background: rgba(248,113,113,0.18); color: #F87171; border: 1px solid rgba(248,113,113,0.45); }
 
     .qd-home-play {
       position: relative;
@@ -724,6 +727,26 @@ function clearCountdown() {
   }
 }
 
+function showHomeToast(message) {
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+    background: rgba(30,20,10,0.92); backdrop-filter: blur(10px);
+    color: #fff; padding: 10px 20px; border-radius: 999px;
+    font-family: 'Inter', sans-serif; font-size: 0.85rem; font-weight: 600;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.5), 0 0 14px rgba(79,195,255,0.35);
+    border: 1px solid rgba(79,195,255,0.4);
+    z-index: 9996;
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => {
+    toast.style.transition = 'opacity 0.3s';
+    toast.style.opacity = '0';
+    setTimeout(() => { try { toast.remove(); } catch (e) {} }, 320);
+  }, 1800);
+}
+
 export function renderHomeScreen(container, callbacks = {}) {
   injectHomeStyles();
   clearCountdown();
@@ -758,42 +781,48 @@ export function renderHomeScreen(container, callbacks = {}) {
   top.appendChild(title);
   top.appendChild(tagline);
 
-  const stats = document.createElement('div');
-  stats.className = 'qd-home-stats';
+  // Stage 7.3: compact stat-chip row — replaces the 2-column card grid so
+  // Play-with-Friend becomes visible above-fold on 360×640. Saves ~80px.
+  const chipRow = document.createElement('div');
+  chipRow.className = 'qd-home-chiprow';
 
-  const bestCard = document.createElement('div');
-  bestCard.className = 'qd-home-stat';
-  bestCard.innerHTML = `
-    <div class="qd-home-stat-icon">🏆</div>
-    <div class="qd-home-stat-value">${best}</div>
-    <div class="qd-home-stat-label"></div>
-  `;
-  bestCard.querySelector('.qd-home-stat-label').textContent = t('bestScore');
+  const bestChip = document.createElement('div');
+  bestChip.className = 'qd-home-chip';
+  bestChip.innerHTML = `<span class="qd-home-chip-ico">🏆</span><span class="qd-home-chip-val">${best}</span>`;
 
-  const streakCard = document.createElement('div');
-  streakCard.className = 'qd-home-stat';
-  const streakIconChar = streak > 0 ? '🔥' : '·';
+  const streakChip = document.createElement('div');
+  streakChip.className = 'qd-home-chip' + (streak > 0 ? '' : ' is-dim');
   if (streak > 0) {
-    streakCard.innerHTML = `
-      <div class="qd-home-stat-icon">${streakIconChar}</div>
-      <div class="qd-home-stat-value qd-home-streak-inline"></div>
-    `;
-    streakCard.querySelector('.qd-home-stat-value').textContent = formatStreakDays(streak, getLanguage());
-    // Stage 7.2: pulsing flame when the streak is already meaningful (≥3 days).
+    streakChip.innerHTML = `<span class="qd-home-chip-ico qd-home-chip-flame">🔥</span><span class="qd-home-chip-val"></span>`;
+    streakChip.querySelector('.qd-home-chip-val').textContent = formatStreakDays(streak, getLanguage());
     if (streak >= 3) {
-      try { pulseStreakFlame(streakCard.querySelector('.qd-home-stat-icon')); } catch (e) {}
+      try { pulseStreakFlame(streakChip.querySelector('.qd-home-chip-flame')); } catch (e) {}
     }
   } else {
-    streakCard.innerHTML = `
-      <div class="qd-home-stat-icon qd-home-stat-icon-dim">${streakIconChar}</div>
-      <div class="qd-home-stat-value qd-home-stat-value-dim">0</div>
-      <div class="qd-home-stat-sub"></div>
-    `;
-    streakCard.querySelector('.qd-home-stat-sub').textContent = t('noStreak');
+    streakChip.innerHTML = `<span class="qd-home-chip-ico">·</span><span class="qd-home-chip-val">0</span>`;
   }
 
-  stats.appendChild(bestCard);
-  stats.appendChild(streakCard);
+  chipRow.appendChild(bestChip);
+  chipRow.appendChild(streakChip);
+
+  // Persistent ❄️ chip — visible when Streak Freeze is unlocked AND this
+  // week's freeze is still available. Tap → small toast.
+  const _xpForChip = getXP();
+  const _lvlForChip = getLevelFromXP(_xpForChip);
+  if (hasStreakFreeze(_lvlForChip) && getStreakFreezeAvailable()) {
+    const freezeChip = document.createElement('button');
+    freezeChip.type = 'button';
+    freezeChip.className = 'qd-home-chip qd-home-chip-freeze';
+    freezeChip.innerHTML = `<span class="qd-home-chip-ico">❄️</span>`;
+    freezeChip.setAttribute('aria-label', t('streakFreezeReady'));
+    freezeChip.addEventListener('click', () => {
+      playClick();
+      showHomeToast(t('streakFreezeReady'));
+    });
+    chipRow.appendChild(freezeChip);
+  }
+
+  top.appendChild(chipRow);
 
   root.appendChild(top);
 
@@ -860,8 +889,6 @@ export function renderHomeScreen(container, callbacks = {}) {
 
     root.appendChild(banner);
   }
-
-  root.appendChild(stats);
 
   if (dailyDone) {
     const completedCard = document.createElement('div');
@@ -1153,6 +1180,31 @@ export function renderHomeScreen(container, callbacks = {}) {
         const nameEl = document.createElement('span');
         nameEl.className = 'qd-inbox-name';
         nameEl.textContent = oppName;
+
+        // Stage 7.3: opponent mood chip — derived from the match score delta.
+        // Only shown on in-progress matches (complete matches get the existing
+        // "New result!" / "Finished" status, no mood needed).
+        let moodChip = null;
+        if (m.status !== 'complete') {
+          const myScore = slot === 'a' ? m.playerAScore : m.playerBScore;
+          const oppScore = slot === 'a' ? m.playerBScore : m.playerAScore;
+          const myPlayed = myScore != null;
+          const oppPlayed = oppScore != null;
+          if (myPlayed && !oppPlayed) {
+            moodChip = { cls: 'is-lead',   text: '🎯 You lead' };
+          } else if (!myPlayed && oppPlayed) {
+            moodChip = { cls: 'is-behind', text: '🔥 They lead' };
+          } else if (myPlayed && oppPlayed && Math.abs(myScore - oppScore) < 50) {
+            moodChip = { cls: 'is-close',  text: '😤 Close game' };
+          }
+        }
+        if (moodChip) {
+          const chip = document.createElement('span');
+          chip.className = 'qd-inbox-mood ' + moodChip.cls;
+          chip.textContent = moodChip.text;
+          nameEl.appendChild(chip);
+        }
+
         const statusEl = document.createElement('span');
         statusEl.className = 'qd-inbox-status' + (statusClass ? ' ' + statusClass : '');
         statusEl.textContent = statusText;
@@ -1239,14 +1291,13 @@ export function renderHomeScreen(container, callbacks = {}) {
 
   root.appendChild(levelCard);
 
-  // Unlock indicators row — 50/50 daily quota + Streak Freeze readiness.
-  // Only rendered if at least one indicator applies.
+  // Unlock indicators row — 50/50 daily quota only. (Streak Freeze moved
+  // to the top chip row in Stage 7.3 so it's discoverable above-fold.)
   const curLevel = getLevelFromXP(xp);
   const freeQuota = getFreeDailyQuota(curLevel);
   const freeUsed = getTodayFreeUsed();
   const showFreeDaily = freeQuota > 0;
-  const showFreeze = hasStreakFreeze(curLevel) && getStreakFreezeAvailable();
-  if (showFreeDaily || showFreeze) {
+  if (showFreeDaily) {
     const unlockRow = document.createElement('div');
     unlockRow.className = 'qd-home-unlock-row';
     unlockRow.style.cssText = `
@@ -1260,18 +1311,10 @@ export function renderHomeScreen(container, callbacks = {}) {
       font-weight: 600;
       letter-spacing: 0.02em;
     `;
-    if (showFreeDaily) {
-      const item = document.createElement('div');
-      item.style.cssText = 'display:inline-flex; align-items:center; gap:6px;';
-      item.innerHTML = `<span>🎯 ${freeUsed} / ${freeQuota}</span><span style="opacity:0.7;">${t('freeFiftyFiftyCaption')}</span>`;
-      unlockRow.appendChild(item);
-    }
-    if (showFreeze) {
-      const item = document.createElement('div');
-      item.style.cssText = 'display:inline-flex; align-items:center; gap:6px;';
-      item.innerHTML = `<span>❄️ ${t('streakFreezeReady')}</span>`;
-      unlockRow.appendChild(item);
-    }
+    const item = document.createElement('div');
+    item.style.cssText = 'display:inline-flex; align-items:center; gap:6px;';
+    item.innerHTML = `<span>🎯 ${freeUsed} / ${freeQuota}</span><span style="opacity:0.7;">${t('freeFiftyFiftyCaption')}</span>`;
+    unlockRow.appendChild(item);
     root.appendChild(unlockRow);
   }
 
