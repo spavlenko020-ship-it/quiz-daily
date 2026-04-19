@@ -9,6 +9,12 @@ import { initAudio } from './ui/sounds.js';
 import { renderSoundToggle } from './ui/soundToggle.js';
 import { renderBackground } from './ui/background.js';
 
+if (import.meta.env.DEV) {
+  import('./game/__diag__/matchDiag.js').then(() => {
+    console.log('[diag] matchDiag loaded — call window.__matchDiag(window.__platform) in Console to test');
+  });
+}
+
 let app;
 let platform;
 
@@ -235,6 +241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   platform = await detectPlatform();
   await platform.init();
   console.log('[platform] using adapter:', platform.name);
+  if (import.meta.env.DEV) { window.__platform = platform; }
   app = document.querySelector('#app');
   initAudio();
   renderLangSwitcher();

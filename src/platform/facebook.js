@@ -125,6 +125,28 @@ const platform = {
       console.error('[FB] sendMatchUpdate failed:', e);
       return false;
     }
+  },
+
+  // NOTE: FB rate-limits player.setDataAsync to ~1 write / 2s.
+  // This wrapper does not debounce — callers (matchStore and up) must throttle.
+  async getContextData() {
+    try {
+      const data = await FBInstant.player.getDataAsync(['match']);
+      return data && data.match ? data.match : null;
+    } catch (e) {
+      console.error('[FB] getContextData failed:', e);
+      return null;
+    }
+  },
+
+  async setContextData(matchJson) {
+    try {
+      await FBInstant.player.setDataAsync({ match: matchJson });
+      return true;
+    } catch (e) {
+      console.error('[FB] setContextData failed:', e);
+      return false;
+    }
   }
 };
 

@@ -56,6 +56,22 @@ const platform = {
   async sendMatchUpdate(payload) {
     console.log('[web mock] sendMatchUpdate:', payload);
     return true;
+  },
+
+  async getContextData() {
+    try {
+      const raw = localStorage.getItem('mock_match_ctx');
+      console.log('[web mock] getContextData →', raw ? 'found' : 'null');
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  },
+
+  async setContextData(matchJson) {
+    try {
+      localStorage.setItem('mock_match_ctx', JSON.stringify(matchJson));
+      console.log('[web mock] setContextData saved');
+      return true;
+    } catch (e) { return false; }
   }
 };
 export default platform;
