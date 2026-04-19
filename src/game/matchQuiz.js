@@ -2,6 +2,7 @@ import { questions as allQuestions } from './questions.js';
 import { renderQuizScreen } from './screens.js';
 import { getLanguage } from '../i18n/i18n.js';
 import { playClick } from '../ui/sounds.js';
+import { attachPowerupBar } from '../ui/quizHooks.js';
 
 const DIFFICULTY_MULTIPLIER = { easy: 1, medium: 1.25, hard: 1.5 };
 const STYLE_ID = 'qd-match-quiz-styles';
@@ -180,7 +181,11 @@ export function renderMatchQuizScreen(container, match, platform, callbacks = {}
   container.appendChild(wrapper);
 
   const adapter = new MatchQuizAdapter(match, getLanguage());
+  // Hook powerup bar (50/50 + free daily) — same MutationObserver-based
+  // helper that the solo flow uses; adapter duck-types the Quiz interface.
+  const powerupHandle = attachPowerupBar(host, adapter, platform);
   renderQuizScreen(host, adapter, () => {
+    if (powerupHandle && typeof powerupHandle.detach === 'function') powerupHandle.detach();
     if (onComplete) onComplete(adapter.score, adapter.correctCount, adapter.answerHistory);
   });
 }

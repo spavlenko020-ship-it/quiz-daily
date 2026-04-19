@@ -3,6 +3,9 @@ import { t } from '../i18n/i18n.js';
 import { playClick } from '../ui/sounds.js';
 import { calculateMatchReward, applyMatchReward } from './matchRewards.js';
 import { saveMatchImmediate } from './matchStore.js';
+import { getLevelFromXP, getXP } from './stats.js';
+import { hasProBadge } from './powerups.js';
+import { applyProBadgeToScore } from '../ui/quizHooks.js';
 
 const STYLE_ID = 'qd-match-result-styles';
 
@@ -474,4 +477,12 @@ export function renderMatchResult(container, match, currentPlayerId, platform, c
   root.appendChild(actions);
 
   container.appendChild(root);
+
+  // Pro Badge decoration on the viewer's score card when level ≥ 10.
+  if (hasProBadge(getLevelFromXP(getXP()))) {
+    const myCardScore = youCard.querySelector('.qd-matchresult-card-score');
+    if (myCardScore) {
+      applyProBadgeToScore(youCard.parentElement || youCard, 'PRO');
+    }
+  }
 }

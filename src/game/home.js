@@ -2,6 +2,7 @@ import { theme } from '../ui/theme.js';
 import { t, getLanguage } from '../i18n/i18n.js';
 import { formatStreakDays } from '../i18n/plural.js';
 import { getBestScore, getStreak, isDailyCompletedToday, msUntilTomorrow, getTodayBestScore, getXP, getCoins, getLevelFromXP, getXPProgressInLevel } from './stats.js';
+import { getFreeDailyQuota, getTodayFreeUsed, hasStreakFreeze, getStreakFreezeAvailable, hasPendingStreakFreezeToast, clearPendingStreakFreezeToast, getPendingUnlock, markUnlockAnnounced } from './powerups.js';
 import { QUESTIONS_PER_SESSION } from './quiz.js';
 import { playClick, playWhoosh } from '../ui/sounds.js';
 
@@ -1232,6 +1233,77 @@ export function renderHomeScreen(container, callbacks = {}) {
   });
 
   root.appendChild(levelCard);
+
+  // Unlock indicators row — 50/50 daily quota + Streak Freeze readiness.
+  // Only rendered if at least one indicator applies.
+  const curLevel = getLevelFromXP(xp);
+  const freeQuota = getFreeDailyQuota(curLevel);
+  const freeUsed = getTodayFreeUsed();
+  const showFreeDaily = freeQuota > 0;
+  const showFreeze = hasStreakFreeze(curLevel) && getStreakFreezeAvailable();
+  if (showFreeDaily || showFreeze) {
+    const unlockRow = document.createElement('div');
+    unlockRow.className = 'qd-home-unlock-row';
+    unlockRow.style.cssText = `
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 8px;
+      padding: 0 4px;
+      font-size: 0.72rem;
+      color: ${theme.colors.textMuted};
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    `;
+    if (showFreeDaily) {
+      const item = document.createElement('div');
+      item.style.cssText = 'display:inline-flex; align-items:center; gap:6px;';
+      item.innerHTML = `<span>🎯 ${freeUsed} / ${freeQuota}</span><span style="opacity:0.7;">${t('freeFiftyFiftyCaption')}</span>`;
+      unlockRow.appendChild(item);
+    }
+    if (showFreeze) {
+      const item = document.createElement('div');
+      item.style.cssText = 'display:inline-flex; align-items:center; gap:6px;';
+      item.innerHTML = `<span>❄️ ${t('streakFreezeReady')}</span>`;
+      unlockRow.appendChild(item);
+    }
+    root.appendChild(unlockRow);
+  }
+
+  // Milestone-unlock overlay — shown once per level crossing, deduplicated
+  // via localStorage. Defer to next tick so Home is painted first.
+  const pendingUnlock = getPendingUnlock(curLevel);
+  if (pendingUnlock) {
+    markUnlockAnnounced(pendingUnlock);
+    setTimeout(() => {
+      import('../ui/unlockOverlay.js').then(m => m.showUnlockOverlay(pendingUnlock));
+    }, 180);
+  }
+
+  // Pending Streak-Freeze toast from a previous play session's freeze.
+  if (hasPendingStreakFreezeToast()) {
+    clearPendingStreakFreezeToast();
+    setTimeout(() => {
+      const toast = document.createElement('div');
+      toast.textContent = t('streakFreezeUsed');
+      toast.style.cssText = `
+        position: fixed; bottom: 32px; left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, rgba(79,195,255,0.95), rgba(79,129,255,0.95));
+        color: #fff; padding: 12px 22px;
+        border-radius: 999px;
+        font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 700;
+        box-shadow: 0 10px 28px rgba(79,129,255,0.45);
+        z-index: 9999;
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 320);
+      }, 2400);
+    }, 260);
+  }
 
   const credits = document.createElement('div');
   credits.textContent = 'Sounds: Salamander Piano · CC-BY';

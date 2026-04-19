@@ -8,6 +8,45 @@ import { renderLangSwitcher } from './ui/langSwitcher.js';
 import { initAudio } from './ui/sounds.js';
 import { renderSoundToggle } from './ui/soundToggle.js';
 import { renderBackground } from './ui/background.js';
+import { attachPowerupBar, applyProBadgeToScore } from './ui/quizHooks.js';
+import { hasStreakFreeze, hasProBadge, getStreakFreezeAvailable, consumeStreakFreeze } from './game/powerups.js';
+import { getLevelFromXP as _getLevelFromXP } from './game/stats.js';
+
+// Streak-Freeze intercept: if the player is about to lose a streak (gap > 1)
+// AND has the unlock AND hasn't used their weekly freeze, backdate the
+// lastPlayDate to yesterday so stats.recordPlay() sees a continued streak.
+// stats.js is untouched — this wraps via localStorage directly.
+const LAST_PLAY_KEY = 'quiz_daily_last_play_date';
+function _todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function _yesterdayStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function _daysBetweenStrs(a, b) {
+  const [y1,m1,d1] = a.split('-').map(Number);
+  const [y2,m2,d2] = b.split('-').map(Number);
+  const A = new Date(y1, m1-1, d1);
+  const B = new Date(y2, m2-1, d2);
+  return Math.round((B - A) / 86400000);
+}
+function maybeApplyStreakFreeze() {
+  try {
+    const level = _getLevelFromXP(getXP());
+    if (!hasStreakFreeze(level) || !getStreakFreezeAvailable()) return false;
+    const last = localStorage.getItem(LAST_PLAY_KEY);
+    if (!last) return false;
+    const today = _todayStr();
+    if (_daysBetweenStrs(last, today) <= 1) return false;
+    // Freeze: backdate to yesterday so recordPlay treats this as a +1 day continue.
+    localStorage.setItem(LAST_PLAY_KEY, _yesterdayStr());
+    consumeStreakFreeze();
+    return true;
+  } catch (e) { return false; }
+}
 
 if (import.meta.env.DEV) {
   import('./game/__diag__/matchDiag.js').then(() => {
@@ -372,8 +411,11 @@ function startGame(isDaily) {
   const seed = isDaily ? platform.getDailyChallengeSeed() : null;
   const quiz = new Quiz(seed, getLanguage());
   app.innerHTML = '';
+  const powerupHandle = attachPowerupBar(app, quiz, platform);
   renderQuizScreen(app, quiz, () => {
+    if (powerupHandle && typeof powerupHandle.detach === 'function') powerupHandle.detach();
     const bestResult = setBestScoreIfHigher(quiz.score);
+    if (isDaily) maybeApplyStreakFreeze();
     const streakResult = isDaily ? recordPlay() : null;
     if (isDaily) saveDailyResult(quiz);
 
@@ -407,6 +449,11 @@ function startGame(isDaily) {
       prevXpPercent,
       newXpPercent: xpResult.leveledUp ? 100 : newXpPercent
     });
+    // Pro Badge decoration — post-render decorator is safe because
+    // renderFinishScreen is synchronous. No-op if the selector is absent.
+    if (hasProBadge(xpResult.newLevel || _getLevelFromXP(xpResult.newTotal))) {
+      applyProBadgeToScore(app, 'PRO');
+    }
   });
 }
 

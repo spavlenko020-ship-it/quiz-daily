@@ -90,7 +90,21 @@ export const translations = {
     waitingFor: "Waiting for {name}",
     newResult: "New result!",
     finished: "Finished",
-    viewAll: "View all ({n})"
+    viewAll: "View all ({n})",
+    useFiftyFifty: "Use 50/50",
+    free: "Free",
+    cancel: "Cancel",
+    fiftyFiftyUsed: "50/50 used!",
+    notEnoughCoins: "Not enough coins",
+    freeFiftyFiftyCaption: "Free 50/50 today",
+    streakFreezeReady: "Streak Freeze ready",
+    streakFreezeUsed: "Streak Freeze used! ❄️",
+    levelUpUnlocked: "Level {N} unlocked: {reward}!",
+    rewardFreeFifty1: "1 free 50/50 daily",
+    rewardFreeFifty2: "2 free 50/50 daily",
+    rewardStreakFreeze: "Streak Freeze (1/week)",
+    rewardProBadge: "Pro Badge 👑",
+    claim: "Claim"
   },
   uk: {
     appName: "Щоденний Квіз",
@@ -183,7 +197,21 @@ export const translations = {
     waitingFor: "Чекає на {name}",
     newResult: "Новий результат!",
     finished: "Завершено",
-    viewAll: "Усі ({n})"
+    viewAll: "Усі ({n})",
+    useFiftyFifty: "Використати 50/50",
+    free: "Безкоштовно",
+    cancel: "Скасувати",
+    fiftyFiftyUsed: "50/50 використано!",
+    notEnoughCoins: "Недостатньо монет",
+    freeFiftyFiftyCaption: "Безкоштовні 50/50 сьогодні",
+    streakFreezeReady: "Заморозка серії готова",
+    streakFreezeUsed: "Заморозка серії використана! ❄️",
+    levelUpUnlocked: "Рівень {N} відкрито: {reward}!",
+    rewardFreeFifty1: "1 безкоштовне 50/50 щодня",
+    rewardFreeFifty2: "2 безкоштовних 50/50 щодня",
+    rewardStreakFreeze: "Заморозка серії (1/тиждень)",
+    rewardProBadge: "Значок Pro 👑",
+    claim: "Отримати"
   },
   no: {
     appName: "Daglig Quiz",
@@ -276,7 +304,21 @@ export const translations = {
     waitingFor: "Venter på {name}",
     newResult: "Nytt resultat!",
     finished: "Fullført",
-    viewAll: "Se alle ({n})"
+    viewAll: "Se alle ({n})",
+    useFiftyFifty: "Bruk 50/50",
+    free: "Gratis",
+    cancel: "Avbryt",
+    fiftyFiftyUsed: "50/50 brukt!",
+    notEnoughCoins: "Ikke nok mynter",
+    freeFiftyFiftyCaption: "Gratis 50/50 i dag",
+    streakFreezeReady: "Streak Freeze klar",
+    streakFreezeUsed: "Streak Freeze brukt! ❄️",
+    levelUpUnlocked: "Nivå {N} låst opp: {reward}!",
+    rewardFreeFifty1: "1 gratis 50/50 daglig",
+    rewardFreeFifty2: "2 gratis 50/50 daglig",
+    rewardStreakFreeze: "Streak Freeze (1/uke)",
+    rewardProBadge: "Pro-merke 👑",
+    claim: "Krev"
   }
 };
 
