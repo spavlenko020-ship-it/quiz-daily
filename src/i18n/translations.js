@@ -60,7 +60,15 @@ export const translations = {
     shareViber: "Viber",
     shareCopy: "Copy text",
     shareClose: "Close",
-    navBackHome: "Back to home"
+    navBackHome: "Back to home",
+    playWithFriend: "Play with Friend",
+    playWithFriendSub: "Challenge a friend on Facebook",
+    matchCancelled: "Match cancelled",
+    matchLobbyTitle: "Match Created",
+    yourOpponent: "Your opponent",
+    matchInfo: "6 questions. You play first.",
+    startYourTurn: "Start Your Turn",
+    backToHome: "Back to Home"
   },
   uk: {
     appName: "Щоденний Квіз",
@@ -123,7 +131,15 @@ export const translations = {
     shareViber: "Viber",
     shareCopy: "Скопіювати текст",
     shareClose: "Закрити",
-    navBackHome: "На головну"
+    navBackHome: "На головну",
+    playWithFriend: "Грати з другом",
+    playWithFriendSub: "Викликай друга у Facebook",
+    matchCancelled: "Матч скасовано",
+    matchLobbyTitle: "Матч створено",
+    yourOpponent: "Твій суперник",
+    matchInfo: "6 питань. Ти граєш першим.",
+    startYourTurn: "Почати свій хід",
+    backToHome: "На головну"
   },
   no: {
     appName: "Daglig Quiz",
@@ -186,7 +202,15 @@ export const translations = {
     shareViber: "Viber",
     shareCopy: "Kopier tekst",
     shareClose: "Lukk",
-    navBackHome: "Tilbake"
+    navBackHome: "Tilbake",
+    playWithFriend: "Spill med venn",
+    playWithFriendSub: "Utfordre en venn på Facebook",
+    matchCancelled: "Kamp avbrutt",
+    matchLobbyTitle: "Kamp opprettet",
+    yourOpponent: "Din motstander",
+    matchInfo: "6 spørsmål. Du spiller først.",
+    startYourTurn: "Start din runde",
+    backToHome: "Til hjem"
   }
 };
 

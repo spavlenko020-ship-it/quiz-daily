@@ -43,6 +43,7 @@ export class Match {
     this.playerBScore = data.playerBScore ?? null;
     this.playerAId = data.playerAId || null;
     this.playerBId = data.playerBId || null;
+    this.opponent = data.opponent || null;
     this.status = data.status || 'pending_a';
     this.winnerId = data.winnerId || null;
     this.createdAt = data.createdAt || Date.now();
@@ -62,6 +63,7 @@ export class Match {
       playerBScore: null,
       playerAId: 'me',
       playerBId: opponentData && opponentData.opponent ? opponentData.opponent.id : null,
+      opponent: opponentData && opponentData.opponent ? opponentData.opponent : null,
       status: 'pending_a',
       winnerId: null,
       createdAt: Date.now()
@@ -77,6 +79,7 @@ export class Match {
       playerBScore: this.playerBScore,
       playerAId: this.playerAId,
       playerBId: this.playerBId,
+      opponent: this.opponent,
       status: this.status,
       winnerId: this.winnerId,
       createdAt: this.createdAt

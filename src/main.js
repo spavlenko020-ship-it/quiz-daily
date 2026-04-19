@@ -154,9 +154,43 @@ function showHome(fromGame = false) {
     onPlayDaily: () => startGame(true),
     onPlayQuick: () => startGame(false),
     onViewDailyResult: () => showStoredDailyResult(),
+    onPlayWithFriend: onPlayWithFriendClick,
     hasChallenge: showBanner,
     incomingChallenge: showBanner ? incomingChallenge : null
   });
+}
+
+async function onPlayWithFriendClick() {
+  if (!platform || typeof platform.chooseFriend !== 'function') {
+    showToast(t('matchCancelled'));
+    return false;
+  }
+  const picked = await platform.chooseFriend();
+  if (!picked) {
+    showToast(t('matchCancelled'));
+    return false;
+  }
+  try {
+    const [{ Match }, { questions }, { saveMatch }] = await Promise.all([
+      import('./game/match.js'),
+      import('./game/questions.js'),
+      import('./game/matchStore.js')
+    ]);
+    const match = Match.create(picked, questions);
+    await saveMatch(match, platform);
+    await startMatchLobby(match);
+    return true;
+  } catch (e) {
+    console.error('[match] create/save failed:', e);
+    showToast(t('matchCancelled'));
+    return false;
+  }
+}
+
+async function startMatchLobby(match) {
+  const { renderMatchLobby } = await import('./game/matchLobby.js');
+  app.innerHTML = '';
+  renderMatchLobby(app, match, platform, () => showHome(true));
 }
 
 function startGame(isDaily) {

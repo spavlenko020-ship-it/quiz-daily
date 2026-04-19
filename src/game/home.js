@@ -386,6 +386,88 @@ function injectHomeStyles() {
       letter-spacing: 0.02em;
     }
 
+    /* Play with Friend — indigo/purple gradient, visually distinct from
+       emerald (Daily primary) and amber (challenge banner). Same geometry
+       as the Daily PLAY button (220x80) so layout rhythm is preserved. */
+    .qd-home-play-friend {
+      position: relative;
+      width: 220px;
+      min-height: 80px;
+      margin: 1rem auto 0.25rem auto;
+      padding: 0.75rem 1rem;
+      background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+      color: #FFFFFF;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-top: 1px solid rgba(255,255,255,0.28);
+      border-radius: ${r.xl};
+      font-family: ${theme.fonts.body};
+      cursor: pointer;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      text-align: left;
+      box-shadow:
+        0 4px 0 #3730a3,
+        0 8px 24px rgba(124, 58, 237, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      transition: all 180ms ease-out;
+    }
+    .qd-home-play-friend:hover {
+      filter: brightness(1.08);
+      transform: translateY(-2px);
+      box-shadow:
+        0 2px 0 #3730a3,
+        0 12px 32px rgba(124, 58, 237, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    }
+    .qd-home-play-friend:active {
+      transform: translateY(2px);
+      box-shadow:
+        0 0 0 #3730a3,
+        0 4px 12px rgba(124, 58, 237, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+    .qd-home-play-friend.is-loading {
+      opacity: 0.6;
+      cursor: wait;
+      pointer-events: none;
+    }
+    .qd-home-play-friend .qd-friend-icon {
+      font-size: 1.8rem;
+      line-height: 1;
+      flex-shrink: 0;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+    }
+    .qd-home-play-friend .qd-friend-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+    }
+    .qd-home-play-friend .qd-friend-label {
+      font-family: ${theme.fonts.display};
+      font-weight: 800;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      line-height: 1.1;
+      color: #ffffff;
+      text-shadow: 0 1px 0 rgba(0,0,0,0.2);
+    }
+    .qd-home-play-friend .qd-friend-sub {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.82);
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+    }
+
     .qd-level-card {
       display: flex;
       flex-direction: column;
@@ -492,7 +574,7 @@ export function renderHomeScreen(container, callbacks = {}) {
     setTimeout(() => playWhoosh(), 100);
   }
 
-  const { onPlayDaily, onPlayQuick, onViewDailyResult, hasChallenge, incomingChallenge } = callbacks;
+  const { onPlayDaily, onPlayQuick, onViewDailyResult, onPlayWithFriend, hasChallenge, incomingChallenge } = callbacks;
 
   const best = getBestScore();
   const streak = getStreak();
@@ -723,6 +805,52 @@ export function renderHomeScreen(container, callbacks = {}) {
     streakNote.className = 'qd-home-streak-note';
     streakNote.textContent = '🔥 ' + t('dailyPlayCountsStreak');
     root.appendChild(streakNote);
+  }
+
+  // Play with Friend — new viral CTA. Indigo/purple gradient to stand apart from
+  // emerald Daily PLAY (above) and muted Quick Play (below). Only rendered when
+  // the host wired a callback (keeps Home working on platforms without matchmaking).
+  if (onPlayWithFriend) {
+    const friendBtn = document.createElement('button');
+    friendBtn.type = 'button';
+    friendBtn.id = 'btn-play-with-friend';
+    friendBtn.className = 'qd-home-play-friend';
+
+    const icon = document.createElement('span');
+    icon.className = 'qd-friend-icon';
+    icon.textContent = '⚔️';
+
+    const textCol = document.createElement('span');
+    textCol.className = 'qd-friend-text';
+    const label = document.createElement('span');
+    label.className = 'qd-friend-label';
+    label.textContent = t('playWithFriend');
+    const sub = document.createElement('span');
+    sub.className = 'qd-friend-sub';
+    sub.textContent = t('playWithFriendSub');
+    textCol.appendChild(label);
+    textCol.appendChild(sub);
+
+    friendBtn.appendChild(icon);
+    friendBtn.appendChild(textCol);
+
+    friendBtn.addEventListener('click', async () => {
+      if (friendBtn.classList.contains('is-loading')) return;
+      playClick();
+      friendBtn.classList.add('is-loading');
+      try {
+        const ok = await onPlayWithFriend();
+        if (!ok) {
+          // Host (main.js) already showed a toast on failure. Restore the button.
+          friendBtn.classList.remove('is-loading');
+        }
+        // On success, host navigates away and the DOM is replaced — no cleanup needed.
+      } catch (e) {
+        friendBtn.classList.remove('is-loading');
+      }
+    });
+
+    root.appendChild(friendBtn);
   }
 
   // Quick Play — always available. Emerald primary when Daily done (it IS the actionable
