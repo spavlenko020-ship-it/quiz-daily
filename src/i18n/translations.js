@@ -76,7 +76,15 @@ export const translations = {
     youWon: "You won! 🏆",
     youLost: "You lost.",
     itsATie: "It's a tie.",
-    questionCounter: "Question {n} / {total}"
+    questionCounter: "Question {n} / {total}",
+    rewardEarned: "Rewards earned!",
+    watch2xAd: "Watch ad → 2× reward",
+    rewardDoubled: "Rewards doubled! 🎉",
+    adUnavailable: "Ad not available right now",
+    challengeBack: "Challenge {name} Back ⚔️",
+    challengeDifferentFriend: "Challenge Different Friend",
+    shareWin: "Share Win 📣",
+    shareWinText: "I beat {oppName} {myScore} : {oppScore} in Daily Quiz! Try to beat me 🎯"
   },
   uk: {
     appName: "Щоденний Квіз",
@@ -155,7 +163,15 @@ export const translations = {
     youWon: "Ти переміг! 🏆",
     youLost: "Ти програв.",
     itsATie: "Нічия.",
-    questionCounter: "Питання {n} / {total}"
+    questionCounter: "Питання {n} / {total}",
+    rewardEarned: "Нагороди отримано!",
+    watch2xAd: "Подивитись рекламу → подвоїти",
+    rewardDoubled: "Нагорода подвоєна! 🎉",
+    adUnavailable: "Реклама зараз недоступна",
+    challengeBack: "Викликати {name} знов ⚔️",
+    challengeDifferentFriend: "Викликати іншого друга",
+    shareWin: "Похвастатись 📣",
+    shareWinText: "Обіграв {oppName} {myScore} : {oppScore} у Daily Quiz! Спробуй побити мій рахунок 🎯"
   },
   no: {
     appName: "Daglig Quiz",
@@ -234,7 +250,15 @@ export const translations = {
     youWon: "Du vant! 🏆",
     youLost: "Du tapte.",
     itsATie: "Uavgjort.",
-    questionCounter: "Spørsmål {n} / {total}"
+    questionCounter: "Spørsmål {n} / {total}",
+    rewardEarned: "Belønninger oppnådd!",
+    watch2xAd: "Se reklame → 2× belønning",
+    rewardDoubled: "Belønninger doblet! 🎉",
+    adUnavailable: "Annonse ikke tilgjengelig",
+    challengeBack: "Utfordre {name} igjen ⚔️",
+    challengeDifferentFriend: "Utfordre en annen venn",
+    shareWin: "Del seier 📣",
+    shareWinText: "Jeg slo {oppName} {myScore} : {oppScore} i Daily Quiz! Prøv å slå meg 🎯"
   }
 };
 

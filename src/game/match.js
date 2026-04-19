@@ -47,6 +47,8 @@ export class Match {
     this.status = data.status || 'pending_a';
     this.winnerId = data.winnerId || null;
     this.createdAt = data.createdAt || Date.now();
+    this.rewardsClaimed = data.rewardsClaimed === true;
+    this.rewardsDoubled = data.rewardsDoubled === true;
   }
 
   static create(opponentData, questionPool, creatorId = 'me') {
@@ -88,7 +90,9 @@ export class Match {
       opponent: this.opponent,
       status: this.status,
       winnerId: this.winnerId,
-      createdAt: this.createdAt
+      createdAt: this.createdAt,
+      rewardsClaimed: this.rewardsClaimed,
+      rewardsDoubled: this.rewardsDoubled
     });
   }
 

@@ -237,9 +237,67 @@ async function startMatchResult(match) {
     ? platform.getPlayerId() : null;
   const resolvedId = myId || match.playerAId || 'web-dev-player';
   app.innerHTML = '';
-  renderMatchResult(app, match, resolvedId, {
-    onBackToHome: () => showHome(true)
+  renderMatchResult(app, match, resolvedId, platform, {
+    onBackToHome: () => showHome(true),
+    onChallengeBack: () => startChallengeBack(match),
+    onChallengeDifferent: () => startNewMatchFromResult(),
+    onShareWin: () => shareMatchWin(match, resolvedId)
   });
+}
+
+async function startChallengeBack(oldMatch) {
+  try {
+    const [{ Match }, { questions }, { saveMatch }, { flushNow }] = await Promise.all([
+      import('./game/match.js'),
+      import('./game/questions.js'),
+      import('./game/matchStore.js'),
+      import('./game/persistQueue.js')
+    ]);
+    // Flush any pending write for the old match before we create a new one.
+    await flushNow(platform);
+    const creatorId = (platform && typeof platform.getPlayerId === 'function')
+      ? platform.getPlayerId() : null;
+    // New contextId so the deterministic question picker produces a fresh set.
+    // Reuse the same opponent so the CTA label ("Challenge Alice Back") is truthful.
+    const seed = Date.now().toString(36);
+    const opponentData = {
+      contextId: (oldMatch.contextId ? oldMatch.contextId + '-r' + seed : 'rematch-' + seed),
+      opponent: oldMatch.opponent || null
+    };
+    const newMatch = Match.create(opponentData, questions, creatorId || 'web-dev-player');
+    await saveMatch(newMatch, platform);
+    await startMatchLobby(newMatch);
+  } catch (e) {
+    console.error('[match] challengeBack failed:', e);
+    showToast(t('matchCancelled'));
+    showHome(true);
+  }
+}
+
+async function startNewMatchFromResult() {
+  // Same entry point as the Home "Play with Friend" button.
+  const ok = await onPlayWithFriendClick();
+  if (!ok) showHome(true);
+}
+
+async function shareMatchWin(match, myId) {
+  try {
+    const { flushNow } = await import('./game/persistQueue.js');
+    await flushNow(platform);
+    const slot = match.getPlayerSlot(myId);
+    const myScore = slot === 'a' ? match.playerAScore : match.playerBScore;
+    const oppScore = slot === 'a' ? match.playerBScore : match.playerAScore;
+    const oppName = (match.opponent && match.opponent.name) ? match.opponent.name : '—';
+    const text = t('shareWinText', {
+      oppName,
+      myScore: myScore != null ? myScore : 0,
+      oppScore: oppScore != null ? oppScore : 0
+    });
+    const res = await platform.shareResult({ text, data: { matchId: match.contextId } });
+    if (res && res.via === 'clipboard') showToast(t('scoreCopied'));
+  } catch (e) {
+    console.error('[match] shareWin failed:', e);
+  }
 }
 
 function startGame(isDaily) {
@@ -329,5 +387,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   initAudio();
   renderLangSwitcher();
   renderSoundToggle();
+  // Resume to Match Result if a completed match is sitting in persisted context
+  // and rewards haven't been claimed yet. This is the production path that
+  // gets the user to Result after the opponent finishes their turn (on FB:
+  // via Messenger push; on web: via the DEV simulate button). One-shot: after
+  // rendering, applyMatchReward sets rewardsClaimed so a later boot skips it.
+  try {
+    const { loadMatch } = await import('./game/matchStore.js');
+    const existing = await loadMatch(platform);
+    if (existing && existing.status === 'complete' && !existing.rewardsClaimed) {
+      startMatchResult(existing);
+      return;
+    }
+  } catch (e) { /* ignore — fall through to Home */ }
   showHome();
 });
