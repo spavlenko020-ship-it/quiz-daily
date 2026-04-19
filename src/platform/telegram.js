@@ -8,6 +8,11 @@ const platform = {
   getDailyChallengeSeed() {
     const d = new Date();
     return parseInt(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`);
-  }
+  },
+
+  async chooseFriend() { console.log('[TG stub] chooseFriend not implemented yet'); return null; },
+  async createMatchContext() { console.log('[TG stub] createMatchContext not implemented yet'); return null; },
+  getMatchContext() { console.log('[TG stub] getMatchContext not implemented yet'); return null; },
+  async sendMatchUpdate(payload) { console.log('[TG stub] sendMatchUpdate not implemented yet'); return false; }
 };
 export default platform;

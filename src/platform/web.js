@@ -29,6 +29,33 @@ const platform = {
   getDailyChallengeSeed() {
     const d = new Date();
     return parseInt(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`);
+  },
+
+  async chooseFriend() {
+    const mock = {
+      contextId: 'mock-ctx-' + Date.now(),
+      contextType: 'SOLO',
+      opponent: { id: 'mock-opp-1', name: 'Alice (Dev)', photo: '' }
+    };
+    console.log('[web mock] chooseFriend:', mock);
+    return mock;
+  },
+
+  async createMatchContext() {
+    const id = 'mock-ctx-' + Date.now();
+    console.log('[web mock] createMatchContext:', id);
+    return id;
+  },
+
+  getMatchContext() {
+    const ctx = { contextId: 'mock-ctx-local', type: 'SOLO' };
+    console.log('[web mock] getMatchContext:', ctx);
+    return ctx;
+  },
+
+  async sendMatchUpdate(payload) {
+    console.log('[web mock] sendMatchUpdate:', payload);
+    return true;
   }
 };
 export default platform;

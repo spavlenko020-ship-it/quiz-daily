@@ -63,6 +63,68 @@ const platform = {
   getDailyChallengeSeed() {
     const d = new Date();
     return parseInt(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`);
+  },
+
+  async chooseFriend() {
+    try {
+      await FBInstant.context.chooseAsync({
+        filters: ['NEW_CONTEXT_ONLY', 'INCLUDE_EXISTING_CHALLENGES'],
+        minSize: 2,
+        maxSize: 2
+      });
+      const contextId = FBInstant.context.getID();
+      const contextType = FBInstant.context.getType();
+      const players = await FBInstant.context.getPlayersAsync();
+      const me = FBInstant.player.getID();
+      const opp = players.find(p => p.getID() !== me);
+      return {
+        contextId,
+        contextType,
+        opponent: opp ? { id: opp.getID(), name: opp.getName(), photo: opp.getPhoto() } : null
+      };
+    } catch (e) {
+      console.error('[FB] chooseFriend failed:', e);
+      return null;
+    }
+  },
+
+  async createMatchContext() {
+    try {
+      await FBInstant.context.createAsync();
+      return FBInstant.context.getID();
+    } catch (e) {
+      console.error('[FB] createMatchContext failed:', e);
+      return null;
+    }
+  },
+
+  getMatchContext() {
+    try {
+      const id = FBInstant.context.getID();
+      if (!id) return null;
+      return { contextId: id, type: FBInstant.context.getType() };
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async sendMatchUpdate(payload) {
+    try {
+      await FBInstant.updateAsync({
+        action: 'CUSTOM',
+        cta: payload.cta || 'Your turn!',
+        image: payload.image || '',
+        text: payload.text || 'It is your turn in Daily Quiz!',
+        template: 'QUIZ_UPDATE',
+        data: payload.data || {},
+        strategy: 'IMMEDIATE',
+        notification: 'PUSH'
+      });
+      return true;
+    } catch (e) {
+      console.error('[FB] sendMatchUpdate failed:', e);
+      return false;
+    }
   }
 };
 
