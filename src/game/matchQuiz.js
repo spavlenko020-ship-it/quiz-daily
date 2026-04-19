@@ -155,6 +155,7 @@ export function renderMatchQuizScreen(container, match, platform, callbacks = {}
   backBtn.setAttribute('aria-label', 'Back');
   backBtn.addEventListener('click', () => {
     playClick();
+    try { platform && platform.tgDisableCloseConfirm && platform.tgDisableCloseConfirm(); } catch (e) {}
     if (onAbort) onAbort();
   });
   banner.appendChild(backBtn);
@@ -184,8 +185,15 @@ export function renderMatchQuizScreen(container, match, platform, callbacks = {}
   // Hook powerup bar (50/50 + free daily) — same MutationObserver-based
   // helper that the solo flow uses; adapter duck-types the Quiz interface.
   const powerupHandle = attachPowerupBar(host, adapter, platform);
+
+  // Stage 7.4a: Telegram-only close confirmation while in match gameplay.
+  // Optional-chain on the method so facebook.js / web.js (which don't define
+  // it) are silent no-ops — zero branching required.
+  try { platform && platform.tgEnableCloseConfirm && platform.tgEnableCloseConfirm(); } catch (e) {}
+
   renderQuizScreen(host, adapter, () => {
     if (powerupHandle && typeof powerupHandle.detach === 'function') powerupHandle.detach();
+    try { platform && platform.tgDisableCloseConfirm && platform.tgDisableCloseConfirm(); } catch (e) {}
     if (onComplete) onComplete(adapter.score, adapter.correctCount, adapter.answerHistory);
   });
 }

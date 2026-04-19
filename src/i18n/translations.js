@@ -117,7 +117,8 @@ export const translations = {
     onb3Body: "Play head-to-head matches. Win rewards.",
     onbNext: "Next",
     onbPlay: "Play!",
-    onbSkip: "Skip"
+    onbSkip: "Skip",
+    tgMatchComingSoon: "Telegram friend matches coming soon! Play solo for now."
   },
   uk: {
     appName: "Щоденний Квіз",
@@ -237,7 +238,8 @@ export const translations = {
     onb3Body: "Грай один на один. Вигравай нагороди.",
     onbNext: "Далі",
     onbPlay: "Грати!",
-    onbSkip: "Пропустити"
+    onbSkip: "Пропустити",
+    tgMatchComingSoon: "Матчі з друзями у Telegram скоро! Поки що грай соло."
   },
   no: {
     appName: "Daglig Quiz",
@@ -357,7 +359,8 @@ export const translations = {
     onb3Body: "Spill mot hverandre. Vinn belønninger.",
     onbNext: "Neste",
     onbPlay: "Spill!",
-    onbSkip: "Hopp over"
+    onbSkip: "Hopp over",
+    tgMatchComingSoon: "Telegram venne-kamper kommer snart! Spill solo foreløpig."
   }
 };
 

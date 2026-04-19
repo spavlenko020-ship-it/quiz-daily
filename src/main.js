@@ -58,22 +58,44 @@ let app;
 let platform;
 
 async function detectPlatform() {
-  if (typeof FBInstant === 'undefined') {
-    const m = await import('./platform/web.js');
-    return m.default;
+  // 150ms grace so the Telegram SDK script can populate window.Telegram.
+  await new Promise((r) => setTimeout(r, 150));
+
+  // 1. Telegram Mini App — primary target as of Stage 7.4a.
+  if (window.Telegram && window.Telegram.WebApp
+      && typeof window.Telegram.WebApp.initData === 'string'
+      && window.Telegram.WebApp.initData.length > 0) {
+    try {
+      const tgAdapter = await import('./platform/telegram.js');
+      const result = await tgAdapter.default.initPlatform();
+      if (result && result.ok) {
+        console.log('[platform] using adapter: telegram');
+        return tgAdapter.default;
+      }
+      console.warn('[platform] TG initPlatform failed:', result && result.reason);
+    } catch (e) {
+      console.warn('[platform] TG adapter import/init threw:', e && e.message);
+    }
   }
-  const timeout = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error('FBInstant init timeout')), 3000)
-  );
-  try {
-    await Promise.race([FBInstant.initializeAsync(), timeout]);
-    const m = await import('./platform/facebook.js');
-    return m.default;
-  } catch (e) {
-    console.warn('[platform] FB detection failed, using web fallback:', e && e.message);
-    const m = await import('./platform/web.js');
-    return m.default;
+
+  // 2. Facebook Instant Games — kept for backwards compat but no longer the
+  // primary target (Business Verification unobtainable for this developer).
+  if (typeof FBInstant !== 'undefined') {
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('FBInstant init timeout')), 3000)
+    );
+    try {
+      await Promise.race([FBInstant.initializeAsync(), timeout]);
+      const m = await import('./platform/facebook.js');
+      return m.default;
+    } catch (e) {
+      console.warn('[platform] FB detection failed, using web fallback:', e && e.message);
+    }
   }
+
+  // 3. Web fallback.
+  const m = await import('./platform/web.js');
+  return m.default;
 }
 
 function buildEmojiGrid(history) {
@@ -209,6 +231,8 @@ function showHome(fromGame = false) {
     onResumeMatch: (match) => navigateToMatch(match),
     onViewAllMatches: () => startMatchesInbox(),
     currentPlayerId: myId,
+    platformName: (platform && typeof platform.getPlatformName === 'function')
+      ? platform.getPlatformName() : (platform && platform.name) || 'web',
     hasChallenge: showBanner,
     incomingChallenge: showBanner ? incomingChallenge : null
   });
@@ -509,6 +533,10 @@ function showStoredDailyResult() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('[boot] Telegram WebApp available:',
+    !!(window.Telegram && window.Telegram.WebApp),
+    'initData length:',
+    (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData && window.Telegram.WebApp.initData.length) || 0);
   initLanguage();
   parseIncomingChallenge();
   renderBackground();

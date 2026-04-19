@@ -4,6 +4,7 @@ function isMobile() {
 
 const platform = {
   name: 'web',
+  getPlatformName() { return 'web'; },
   async init() { /* no-op on web */ },
   async saveScore(score) { /* no-op stub — real leaderboard comes with backend */ },
   async shareResult(data) {

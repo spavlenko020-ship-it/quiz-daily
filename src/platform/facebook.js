@@ -2,6 +2,7 @@ const LEADERBOARD_NAME = 'daily_quiz_scores';
 
 const platform = {
   name: 'facebook',
+  getPlatformName() { return 'facebook'; },
 
   async init() {
     try {

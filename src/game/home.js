@@ -758,7 +758,7 @@ export function renderHomeScreen(container, callbacks = {}) {
     setTimeout(() => playWhoosh(), 100);
   }
 
-  const { onPlayDaily, onPlayQuick, onViewDailyResult, onPlayWithFriend, hasChallenge, incomingChallenge, loadMatches, onResumeMatch, onViewAllMatches, currentPlayerId } = callbacks;
+  const { onPlayDaily, onPlayQuick, onViewDailyResult, onPlayWithFriend, hasChallenge, incomingChallenge, loadMatches, onResumeMatch, onViewAllMatches, currentPlayerId, platformName } = callbacks;
 
   const best = getBestScore();
   const streak = getStreak();
@@ -1035,6 +1035,17 @@ export function renderHomeScreen(container, callbacks = {}) {
     friendBtn.addEventListener('click', async () => {
       if (friendBtn.classList.contains('is-loading')) return;
       playClick();
+      // Stage 7.4a: Telegram has no real friend-picker yet (deep-link
+      // handshake ships in Stage 7.5). Show a one-time informational toast
+      // on first tap so the user isn't confused by the silent no-op, then
+      // silently return on subsequent taps (existing error path handles it).
+      if (platformName === 'telegram') {
+        if (!localStorage.getItem('tg_friend_notice_shown')) {
+          localStorage.setItem('tg_friend_notice_shown', '1');
+          showHomeToast(t('tgMatchComingSoon'));
+        }
+        return;
+      }
       friendBtn.classList.add('is-loading');
       try {
         const ok = await onPlayWithFriend();
