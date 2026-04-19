@@ -1,17 +1,33 @@
 import { t } from '../i18n/i18n.js';
 import { playWhoosh } from './sounds.js';
 
-// Central VFX module for Stage 7.2. Every effect is idempotent and respects
-// `prefers-reduced-motion` — when reduce is on we keep the *visual outcome*
-// (e.g. a colored border, a label) but skip the motion, so the user still sees
-// that "something good happened" without a vestibular trigger.
+// Central VFX module (Stage 7.2 rework). Premium effects powered by vendored
+// canvas-confetti 1.9.3 (public/vendor/confetti.browser.min.js, referenced
+// from index.html — NO CDN at runtime, NO npm dependency). All exports are
+// idempotent and respect `prefers-reduced-motion` through both JS guards and
+// a CSS @media kill-switch on our class prefixes. Public API is unchanged
+// from the initial Stage 7.2 implementation so every caller keeps working.
 
 const STYLE_ID = 'qd-juice-effects-styles';
 
+// DEBUG flag is statically replaced by Vite so the body of `if (DEBUG)`
+// branches is dead-code-eliminated in production — no console.log noise ships.
+const DEBUG = import.meta.env.DEV;
+function debugLog(...args) { if (DEBUG) console.log('[juice]', ...args); }
+
 function prefersReducedMotion() {
-  try {
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches === true;
-  } catch (e) { return false; }
+  return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+// Grabbed at module load. The vendored script runs earlier in <head>, so by
+// the time this module is imported the global is already populated.
+const confettiFn = (typeof window !== 'undefined' && typeof window.confetti === 'function')
+  ? window.confetti : null;
+
+function safeConfetti(opts) {
+  if (!confettiFn) return;
+  if (prefersReducedMotion()) return;
+  try { confettiFn(opts); } catch (e) { /* silent by design */ }
 }
 
 function injectStyles() {
@@ -19,313 +35,377 @@ function injectStyles() {
   const style = document.createElement('style');
   style.id = STYLE_ID;
   style.textContent = `
-    /* --- ON FIRE overlay --- */
-    .qd-on-fire-overlay {
-      position: absolute;
-      top: 56px;
+    /* ======================================================================
+       ON FIRE — glass-morphism badge, fixed top-center, never covers question
+       ====================================================================== */
+    .qd-on-fire {
+      position: fixed;
+      top: 12vh;
       left: 50%;
-      transform: translateX(-50%) translateY(-6px);
+      transform: translateX(-50%) scale(0.6);
+      z-index: 9998;
+      pointer-events: none;
+      padding: 12px 24px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1.5px solid rgba(255,193,7,0.85);
+      box-shadow: 0 0 40px rgba(255,193,7,0.5), inset 0 0 20px rgba(255,255,255,0.04);
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
       font-family: 'Space Grotesk', 'Inter', sans-serif;
       font-weight: 800;
-      font-size: 1.7rem;
+      font-size: 1.35rem;
       letter-spacing: 0.06em;
-      color: #FFD54F;
-      text-shadow: 0 0 14px rgba(255,213,79,0.75), 0 0 28px rgba(255,140,26,0.55);
-      pointer-events: none;
-      z-index: 50;
       white-space: nowrap;
       opacity: 0;
-      animation: qdOnFireFlash 1200ms ease-out forwards;
+      text-shadow: 0 2px 0 rgba(0,0,0,0.3), 0 0 12px currentColor;
+      animation: qdOnFireEnter 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+                 qdOnFireExit 400ms ease-out 1500ms forwards;
     }
-    @keyframes qdOnFireFlash {
-      0%   { opacity: 0; transform: translateX(-50%) translateY(-14px) scale(0.7); }
-      18%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.1); }
-      42%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
-      100% { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.95); }
+    .qd-on-fire-3 { color: #F59E0B; }
+    .qd-on-fire-5 { color: #06B6D4; }
+    .qd-on-fire-7 { color: #FFD700; }
+    @keyframes qdOnFireEnter {
+      0%   { opacity: 0; transform: translateX(-50%) scale(0.6); }
+      60%  { opacity: 1; transform: translateX(-50%) scale(1.12); }
+      100% { opacity: 1; transform: translateX(-50%) scale(1); }
     }
-    .qd-on-fire-overlay.qd-reduced {
-      animation: none;
-      opacity: 1;
-      transition: opacity 1.2s ease-out;
-    }
-
-    /* --- Confetti host --- */
-    .qd-confetti-host {
-      position: absolute; inset: 0;
-      pointer-events: none;
-      overflow: hidden;
-      z-index: 40;
-    }
-    .qd-confetti-piece {
-      position: absolute;
-      top: -12px;
-      width: 8px; height: 12px;
-      border-radius: 2px;
-      opacity: 0;
-      will-change: transform, opacity;
-      animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
-      animation-fill-mode: forwards;
-    }
-    @keyframes qdConfettiFall {
-      0%   { opacity: 0; transform: translate3d(0,-20px,0) rotate(0deg); }
-      8%   { opacity: 1; }
-      100% { opacity: 0; transform: translate3d(var(--qd-dx,0px), var(--qd-dy,100vh), 0) rotate(var(--qd-rot,720deg)); }
+    @keyframes qdOnFireExit {
+      0%   { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+      100% { opacity: 0; transform: translateX(-50%) scale(1) translateY(-20px); }
     }
 
-    /* --- Screen shake --- */
-    .qd-shake-weak   { animation: qdShakeWeak   400ms ease-in-out; }
-    .qd-shake-medium { animation: qdShakeMedium 400ms ease-in-out; }
-    .qd-shake-heavy  { animation: qdShakeHeavy  400ms ease-in-out; }
+    /* ======================================================================
+       Screen shake — three strengths, transform-origin center
+       ====================================================================== */
+    .qd-shake-weak   { animation: qdShakeWeak   500ms ease-out; transform-origin: center; }
+    .qd-shake-medium { animation: qdShakeMed    500ms ease-out; transform-origin: center; }
+    .qd-shake-heavy  { animation: qdShakeHeavy  500ms ease-out; transform-origin: center; }
     @keyframes qdShakeWeak {
-      0%,100% { transform: translateX(0); }
-      15% { transform: translateX(-2px); }
-      30% { transform: translateX(2px); }
-      45% { transform: translateX(-1.5px); }
-      60% { transform: translateX(1.5px); }
-      75% { transform: translateX(-1px); }
-      90% { transform: translateX(1px); }
+      0%,100% { transform: translate(0,0) rotate(0); }
+      10% { transform: translate(-3px, 1px) rotate(-0.5deg); }
+      20% { transform: translate(3px, -1px) rotate(0.5deg); }
+      30% { transform: translate(-2px, 2px) rotate(-0.4deg); }
+      40% { transform: translate(2px, -2px) rotate(0.4deg); }
+      50% { transform: translate(-2px, 1px) rotate(-0.3deg); }
+      60% { transform: translate(2px, -1px) rotate(0.3deg); }
+      70% { transform: translate(-1px, 1px) rotate(-0.2deg); }
+      80% { transform: translate(1px, -1px) rotate(0.2deg); }
+      90% { transform: translate(-1px, 0) rotate(0); }
     }
-    @keyframes qdShakeMedium {
-      0%,100% { transform: translateX(0); }
-      15% { transform: translateX(-5px); }
-      30% { transform: translateX(5px); }
-      45% { transform: translateX(-4px); }
-      60% { transform: translateX(4px); }
-      75% { transform: translateX(-2px); }
-      90% { transform: translateX(2px); }
+    @keyframes qdShakeMed {
+      0%,100% { transform: translate(0,0) rotate(0); }
+      10% { transform: translate(-6px, 2px) rotate(-1deg); }
+      20% { transform: translate(6px, -2px) rotate(1deg); }
+      30% { transform: translate(-5px, 3px) rotate(-0.8deg); }
+      40% { transform: translate(5px, -3px) rotate(0.8deg); }
+      50% { transform: translate(-4px, 2px) rotate(-0.6deg); }
+      60% { transform: translate(4px, -2px) rotate(0.6deg); }
+      70% { transform: translate(-3px, 1px) rotate(-0.4deg); }
+      80% { transform: translate(3px, -1px) rotate(0.4deg); }
+      90% { transform: translate(-1px, 0) rotate(0); }
     }
     @keyframes qdShakeHeavy {
-      0%,100% { transform: translateX(0) translateY(0); }
-      10% { transform: translateX(-10px) translateY(-2px); }
-      25% { transform: translateX(10px) translateY(2px); }
-      40% { transform: translateX(-8px) translateY(-1px); }
-      55% { transform: translateX(8px) translateY(1px); }
-      70% { transform: translateX(-4px) translateY(0); }
-      85% { transform: translateX(4px) translateY(0); }
+      0%,100% { transform: translate(0,0) rotate(0); }
+      10% { transform: translate(-12px, 4px) rotate(-2deg); }
+      20% { transform: translate(12px, -4px) rotate(2deg); }
+      30% { transform: translate(-10px, 5px) rotate(-1.6deg); }
+      40% { transform: translate(10px, -5px) rotate(1.6deg); }
+      50% { transform: translate(-8px, 3px) rotate(-1.2deg); }
+      60% { transform: translate(8px, -3px) rotate(1.2deg); }
+      70% { transform: translate(-5px, 2px) rotate(-0.8deg); }
+      80% { transform: translate(5px, -2px) rotate(0.8deg); }
+      90% { transform: translate(-2px, 0) rotate(0); }
     }
 
-    /* --- Golden pulse (for big score / new best) --- */
+    /* ======================================================================
+       Golden pulse — multi-layer glow + subtle breath + ::before radial aura
+       ====================================================================== */
     .qd-golden-pulse {
-      animation: qdGoldenPulse 1400ms ease-in-out infinite;
+      position: relative;
+      animation: qdGoldenPulse 1800ms ease-in-out infinite;
+    }
+    .qd-golden-pulse::before {
+      content: '';
+      position: absolute;
+      inset: -20%;
+      background: radial-gradient(circle, rgba(255,215,0,0.35) 0%, rgba(255,215,0,0) 65%);
+      filter: blur(12px);
+      z-index: -1;
+      pointer-events: none;
+      animation: qdGoldenBreath 1800ms ease-in-out infinite;
     }
     @keyframes qdGoldenPulse {
-      0%,100% { color: #FFFFFF; text-shadow: 0 0 0 rgba(255,213,79,0); }
-      50%     { color: #FFD54F; text-shadow: 0 0 20px rgba(255,213,79,0.75), 0 0 40px rgba(245,180,66,0.45); }
+      0%,100% {
+        color: #FFD700;
+        text-shadow: 0 0 20px rgba(255,215,0,0.8), 0 0 40px rgba(245,158,11,0.5), 0 2px 4px rgba(0,0,0,0.4);
+        transform: scale(1);
+      }
+      50% {
+        color: #FFF4B8;
+        text-shadow: 0 0 28px rgba(255,244,184,0.95), 0 0 56px rgba(245,158,11,0.7), 0 2px 4px rgba(0,0,0,0.4);
+        transform: scale(1.015);
+      }
+    }
+    @keyframes qdGoldenBreath {
+      0%,100% { opacity: 0.6; }
+      50%     { opacity: 1; }
     }
 
-    /* --- Streak flame pulse --- */
+    /* ======================================================================
+       Streak flame — double drop-shadow, subtle heat hue-rotate
+       ====================================================================== */
     .qd-streak-pulse {
       display: inline-block;
-      animation: qdStreakPulse 2000ms ease-in-out infinite;
       transform-origin: 50% 60%;
+      animation: qdStreakPulse 2400ms ease-in-out infinite;
       will-change: transform, filter;
     }
     @keyframes qdStreakPulse {
-      0%,100% { transform: scale(1); filter: hue-rotate(0deg) drop-shadow(0 0 2px rgba(255,140,26,0.4)); }
-      50%     { transform: scale(1.15); filter: hue-rotate(-12deg) drop-shadow(0 0 10px rgba(255,140,26,0.85)); }
+      0%,100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 8px #FF6B35) drop-shadow(0 0 16px #FFA500) hue-rotate(0deg);
+      }
+      50% {
+        transform: scale(1.15);
+        filter: drop-shadow(0 0 12px #FF6B35) drop-shadow(0 0 22px #FFA500) hue-rotate(12deg);
+      }
     }
 
-    /* --- Perfect game backdrop (radial rainbow halo) --- */
-    .qd-perfect-backdrop::before {
-      content: '';
+    /* ======================================================================
+       Perfect-game backdrop — conic HSL (Safari-safe) + radial mesh depth
+       ====================================================================== */
+    .qd-perfect-backdrop {
       position: absolute;
-      inset: -40%;
-      z-index: -1;
-      background: conic-gradient(
-        from 0deg,
-        rgba(255,107,107,0.18),
-        rgba(255,193,7,0.18),
-        rgba(16,185,129,0.18),
-        rgba(79,195,247,0.18),
-        rgba(156,39,176,0.18),
-        rgba(255,107,107,0.18)
-      );
-      filter: blur(42px);
-      animation: qdPerfectSpin 8s linear infinite;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      border-radius: inherit;
       pointer-events: none;
     }
-    .qd-perfect-backdrop { position: relative; }
-    @keyframes qdPerfectSpin {
+    .qd-perfect-backdrop .qd-perfect-conic {
+      position: absolute;
+      inset: -40%;
+      background: conic-gradient(
+        from 0deg,
+        hsl(0, 85%, 60%),
+        hsl(60, 85%, 60%),
+        hsl(120, 85%, 60%),
+        hsl(180, 85%, 60%),
+        hsl(240, 85%, 60%),
+        hsl(300, 85%, 60%),
+        hsl(360, 85%, 60%)
+      );
+      filter: blur(60px);
+      opacity: 0.35;
+      animation: qdConicRotate 12s linear infinite;
+    }
+    .qd-perfect-backdrop .qd-perfect-mesh {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 25% 25%, rgba(255,215,0,0.35), transparent 45%),
+        radial-gradient(circle at 75% 20%, rgba(16,185,129,0.3), transparent 45%),
+        radial-gradient(circle at 80% 80%, rgba(139,92,246,0.3), transparent 45%),
+        radial-gradient(circle at 20% 80%, rgba(59,130,246,0.3), transparent 45%);
+      opacity: 0.2;
+    }
+    @keyframes qdConicRotate {
       from { transform: rotate(0deg); }
       to   { transform: rotate(360deg); }
     }
 
-    /* --- Match win aura (concentric gold rings around avatar/card) --- */
-    .qd-match-aura { position: relative; }
+    /* ======================================================================
+       Match-win aura — inner glow + ring pulse ::before/::after + shockwave
+       ====================================================================== */
+    .qd-match-aura {
+      position: relative;
+      box-shadow: inset 0 0 40px rgba(255,215,0,0.4), 0 0 30px rgba(255,215,0,0.5);
+    }
     .qd-match-aura::before,
     .qd-match-aura::after {
       content: '';
       position: absolute;
-      inset: -6px;
+      inset: 0;
       border-radius: inherit;
-      border: 2px solid rgba(255,213,79,0.6);
+      border: 2px solid rgba(255,215,0,0.65);
       pointer-events: none;
-      animation: qdAuraPulse 3000ms ease-out infinite;
+      animation: qdAuraRing 2000ms ease-out infinite;
       opacity: 0;
     }
-    .qd-match-aura::after { animation-delay: 1500ms; }
-    @keyframes qdAuraPulse {
-      0%   { transform: scale(0.95); opacity: 0.9; }
+    .qd-match-aura::after { animation-delay: 1000ms; }
+    @keyframes qdAuraRing {
+      0%   { transform: scale(0.98); opacity: 0.85; }
       80%  { transform: scale(1.35); opacity: 0; }
       100% { transform: scale(1.35); opacity: 0; }
     }
+    .qd-match-shockwave {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(circle, rgba(255,215,0,0.7) 0%, rgba(255,215,0,0.3) 30%, rgba(255,215,0,0) 70%);
+      pointer-events: none;
+      transform: scale(0);
+      opacity: 0.7;
+      animation: qdShockwave 700ms ease-out forwards;
+    }
+    @keyframes qdShockwave {
+      0%   { transform: scale(0); opacity: 0.7; }
+      100% { transform: scale(3); opacity: 0; }
+    }
 
-    /* --- Unlock overlay juice (extends unlockOverlay.js in-place) --- */
+    /* ======================================================================
+       Unlock overlay juice — fullscreen flash + icon spring bounce
+       ====================================================================== */
     .qd-unlock-flash {
-      position: fixed; inset: 0;
-      background: radial-gradient(circle at 50% 50%, rgba(255,213,107,0.55) 0%, rgba(255,213,107,0) 60%);
+      position: fixed;
+      inset: 0;
       z-index: 9997;
       pointer-events: none;
-      animation: qdUnlockFlashFade 700ms ease-out forwards;
+      background: radial-gradient(circle at center,
+        rgba(255,215,0,0.8) 0%,
+        rgba(255,193,7,0.3) 40%,
+        transparent 70%);
+      opacity: 0;
+      animation: qdUnlockFlash 700ms ease-out forwards;
     }
-    @keyframes qdUnlockFlashFade {
+    @keyframes qdUnlockFlash {
       0%   { opacity: 0; }
-      30%  { opacity: 1; }
+      28%  { opacity: 0.7; }
       100% { opacity: 0; }
     }
-    .qd-unlock-particles {
-      position: fixed; inset: 0;
-      pointer-events: none;
-      z-index: 9999;
-      overflow: hidden;
-    }
-    .qd-unlock-particle {
-      position: absolute;
-      left: 50%; top: 50%;
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: radial-gradient(circle, #FFF2B8 0%, #F5B342 70%, rgba(245,180,66,0) 100%);
-      opacity: 0;
-      animation: qdUnlockParticle 1100ms ease-out forwards;
-      will-change: transform, opacity;
-    }
-    @keyframes qdUnlockParticle {
-      0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
-      15%  { opacity: 1; }
-      100% { opacity: 0; transform: translate(calc(-50% + var(--qd-px, 0px)), calc(-50% + var(--qd-py, 0px))) scale(0.8); }
-    }
-    .qd-unlock-level-bounce {
-      animation: qdUnlockLevelBounce 900ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    .qd-unlock-bounce {
       display: inline-block;
+      animation: qdUnlockBounce 700ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      will-change: transform;
     }
-    @keyframes qdUnlockLevelBounce {
-      0%   { transform: scale(0.3); opacity: 0; }
-      60%  { transform: scale(1.25); opacity: 1; }
-      80%  { transform: scale(0.95); }
-      100% { transform: scale(1); }
+    @keyframes qdUnlockBounce {
+      0%   { transform: scale(0) rotate(0deg); }
+      30%  { transform: scale(1.3) rotate(-5deg); }
+      55%  { transform: scale(0.95) rotate(5deg); }
+      80%  { transform: scale(1.05) rotate(-2deg); }
+      100% { transform: scale(1) rotate(0deg); }
     }
 
+    /* ======================================================================
+       Reduced-motion CSS kill-switch — belt-and-suspenders to the JS guards
+       ====================================================================== */
     @media (prefers-reduced-motion: reduce) {
+      .qd-on-fire,
+      .qd-on-fire::before,
       .qd-shake-weak, .qd-shake-medium, .qd-shake-heavy,
-      .qd-golden-pulse, .qd-streak-pulse,
-      .qd-perfect-backdrop::before,
+      .qd-golden-pulse, .qd-golden-pulse::before,
+      .qd-streak-pulse,
+      .qd-perfect-backdrop .qd-perfect-conic,
       .qd-match-aura::before, .qd-match-aura::after,
-      .qd-unlock-flash, .qd-unlock-particle,
-      .qd-unlock-level-bounce,
-      .qd-confetti-piece {
-        animation: none !important;
+      .qd-match-shockwave,
+      .qd-unlock-flash,
+      .qd-unlock-bounce {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
       }
-      .qd-golden-pulse { color: #FFD54F; text-shadow: 0 0 12px rgba(255,213,79,0.5); }
+      /* Preserve the END state so users still see the reward-signal visuals. */
+      .qd-on-fire { opacity: 1; transform: translateX(-50%) scale(1); }
+      .qd-golden-pulse {
+        color: #FFD700;
+        text-shadow: 0 0 20px rgba(255,215,0,0.8), 0 0 40px rgba(245,158,11,0.5), 0 2px 4px rgba(0,0,0,0.4);
+      }
+      .qd-streak-pulse { filter: drop-shadow(0 0 8px #FF6B35) drop-shadow(0 0 16px #FFA500); }
+      .qd-unlock-bounce { transform: scale(1) rotate(0deg); }
     }
   `;
   document.head.appendChild(style);
 }
 
-// --- Effect 1: ON FIRE overlay at streak 3 / 5 / 7 ---
-// `root` is the quiz screen host (we position overlay absolutely inside it).
-// Caller passes streakCount *after* the correct answer — 3 => "on fire",
-// 5 => "unstoppable", 7 => "legendary". Anything else is a no-op.
+// =====================================================================
+// Effect 1 — ON FIRE glass badge (streak 3 / 5 / 7)
+// =====================================================================
+// `root` arg kept for backward-compat with the existing quizHooks call site;
+// the badge itself uses fixed positioning so it always lands top-center
+// regardless of what `root` is.
 export function showOnFire(root, streakCount) {
-  if (!root) return;
   injectStyles();
-  let key = null;
-  if (streakCount === 3) key = 'onFire';
-  else if (streakCount === 5) key = 'unstoppable';
-  else if (streakCount === 7) key = 'legendary';
+  let key = null, colorCls = '';
+  if (streakCount === 3)      { key = 'onFire';       colorCls = 'qd-on-fire-3'; }
+  else if (streakCount === 5) { key = 'unstoppable';  colorCls = 'qd-on-fire-5'; }
+  else if (streakCount === 7) { key = 'legendary';    colorCls = 'qd-on-fire-7'; }
   if (!key) return;
 
-  // Ensure the host is a positioning context (safe — value read from computed).
-  try {
-    const pos = getComputedStyle(root).position;
-    if (pos === 'static' || !pos) root.style.position = 'relative';
-  } catch (e) { /* ignore */ }
+  debugLog('ON FIRE triggered at streak', streakCount);
 
-  const overlay = document.createElement('div');
-  overlay.className = 'qd-on-fire-overlay' + (prefersReducedMotion() ? ' qd-reduced' : '');
-  overlay.textContent = t(key) || key;
-  root.appendChild(overlay);
-
+  const el = document.createElement('div');
+  el.className = `qd-on-fire ${colorCls}`;
+  el.textContent = t(key) || key;
+  document.body.appendChild(el);
   try { playWhoosh(); } catch (e) { /* ignore */ }
 
-  if (prefersReducedMotion()) {
-    // Fade-out only — no bounce.
-    overlay.style.opacity = '1';
-    setTimeout(() => { overlay.style.opacity = '0'; }, 900);
-    setTimeout(() => { overlay.remove(); }, 1400);
-  } else {
-    setTimeout(() => { overlay.remove(); }, 1250);
-  }
+  const totalLifetime = prefersReducedMotion() ? 1600 : 2000;
+  setTimeout(() => { try { el.remove(); } catch (e) {} }, totalLifetime);
 }
 
-// --- Effect 2: Confetti burst (win / record / perfect variants) ---
-// Injects a positioned-absolute host inside `container` and spawns 60–100
-// particles that fall and rotate via CSS custom properties.
-const CONFETTI_PALETTES = {
-  win:     ['#10B981', '#FFD54F', '#34D399', '#F5B342', '#FFFFFF'],
-  record:  ['#F5B342', '#FFD36B', '#FF8C1A', '#FFEAB0', '#FFFFFF'],
-  perfect: null // rainbow (hsl rotated) generated per-particle
-};
+// =====================================================================
+// Effect 2 — Confetti (win / record / perfect)
+// =====================================================================
+// `container` arg is intentionally ignored; canvas-confetti draws on a
+// fixed-position, viewport-sized canvas appended to document.body, so parent
+// clipping can never hide it.
 export function triggerConfetti(container, variant = 'win') {
-  if (!container) return;
   injectStyles();
-  if (prefersReducedMotion()) return; // static fallback = nothing (golden pulse already communicates)
+  if (!confettiFn) { debugLog('confetti unavailable — skipping'); return; }
+  if (prefersReducedMotion()) { debugLog('confetti skipped (reduced motion)'); return; }
+  debugLog('confetti variant', variant);
 
-  // Make container a positioning context if it isn't one.
-  try {
-    const pos = getComputedStyle(container).position;
-    if (pos === 'static' || !pos) container.style.position = 'relative';
-  } catch (e) { /* ignore */ }
-
-  const host = document.createElement('div');
-  host.className = 'qd-confetti-host';
-  container.appendChild(host);
-
-  const count = variant === 'perfect' ? 100 : (variant === 'record' ? 80 : 60);
-  const palette = CONFETTI_PALETTES[variant] || CONFETTI_PALETTES.win;
-  const hostWidth = host.getBoundingClientRect().width || 360;
-
-  for (let i = 0; i < count; i++) {
-    const p = document.createElement('span');
-    p.className = 'qd-confetti-piece';
-    let color;
-    if (variant === 'perfect') {
-      const hue = (i * 360 / count) % 360;
-      color = `hsl(${hue}, 85%, 60%)`;
-    } else {
-      color = palette[i % palette.length];
-    }
-    p.style.background = color;
-    const startX = Math.random() * hostWidth;
-    const dx = (Math.random() - 0.5) * hostWidth * 1.2;
-    const dy = 400 + Math.random() * 400;
-    const rot = (Math.random() * 1440 - 720) + 'deg';
-    const dur = 1400 + Math.random() * 1600;
-    const delay = Math.random() * 450;
-    p.style.left = startX + 'px';
-    p.style.setProperty('--qd-dx', dx + 'px');
-    p.style.setProperty('--qd-dy', dy + 'px');
-    p.style.setProperty('--qd-rot', rot);
-    p.style.width = (6 + Math.random() * 6) + 'px';
-    p.style.height = (8 + Math.random() * 10) + 'px';
-    p.style.animation = `qdConfettiFall ${dur}ms ${delay}ms cubic-bezier(0.2,0.7,0.3,1) forwards`;
-    host.appendChild(p);
+  if (variant === 'win') {
+    safeConfetti({
+      particleCount: 80, spread: 70, origin: { y: 0.6 },
+      colors: ['#FFD700','#10B981','#FFFFFF'], ticks: 250
+    });
+    setTimeout(() => safeConfetti({
+      particleCount: 50, spread: 100, origin: { x: 0, y: 0.7 },
+      angle: 60, colors: ['#FFD700','#F59E0B'], startVelocity: 45
+    }), 200);
+    setTimeout(() => safeConfetti({
+      particleCount: 50, spread: 100, origin: { x: 1, y: 0.7 },
+      angle: 120, colors: ['#FFD700','#F59E0B'], startVelocity: 45
+    }), 400);
+    return;
   }
 
-  // Auto-clean after the longest-lived piece (2000 + 450 delay buffer).
-  setTimeout(() => { try { host.remove(); } catch (e) {} }, 3400);
+  if (variant === 'record') {
+    safeConfetti({
+      particleCount: 150, spread: 160, origin: { y: 0.3 },
+      colors: ['#FFD700','#F59E0B','#FBBF24','#FFFFFF'],
+      gravity: 0.65, startVelocity: 40, ticks: 300
+    });
+    return;
+  }
+
+  if (variant === 'perfect') {
+    safeConfetti({
+      particleCount: 200, spread: 360, origin: { x: 0.5, y: 0.5 },
+      colors: ['#FF006E','#FB5607','#FFBE0B','#8338EC','#3A86FF','#06FFA5'],
+      startVelocity: 35, ticks: 250
+    });
+    setTimeout(() => safeConfetti({
+      particleCount: 80, spread: 90, origin: { x: 0, y: 0.6 },
+      angle: 60, colors: ['#FFBE0B','#FB5607']
+    }), 400);
+    setTimeout(() => safeConfetti({
+      particleCount: 80, spread: 90, origin: { x: 1, y: 0.6 },
+      angle: 120, colors: ['#8338EC','#3A86FF']
+    }), 800);
+    setTimeout(() => safeConfetti({
+      particleCount: 100, spread: 180, origin: { y: 0.3 },
+      shapes: ['star'], colors: ['#FFD700','#FFFFFF'], scalar: 1.2
+    }), 1200);
+    return;
+  }
 }
 
-// --- Effect 3: Screen shake ---
+// =====================================================================
+// Effect 3 — Screen shake (weak / medium / heavy)
+// =====================================================================
 export function screenShake(el, strength = 'medium') {
   if (!el) return;
   injectStyles();
@@ -333,13 +413,21 @@ export function screenShake(el, strength = 'medium') {
   const cls = strength === 'weak'  ? 'qd-shake-weak'
            : strength === 'heavy' ? 'qd-shake-heavy'
            : 'qd-shake-medium';
-  // Idempotent: if already shaking, let current cycle finish.
-  if (el.classList.contains(cls)) return;
+  // Remove any in-flight shake class first so we restart cleanly.
+  el.classList.remove('qd-shake-weak', 'qd-shake-medium', 'qd-shake-heavy');
+  // Force reflow so the removed-then-added animation restarts.
+  // eslint-disable-next-line no-unused-expressions
+  el.offsetWidth;
   el.classList.add(cls);
-  setTimeout(() => { el.classList.remove(cls); }, 420);
+  const onEnd = () => { el.classList.remove(cls); el.removeEventListener('animationend', onEnd); };
+  el.addEventListener('animationend', onEnd);
+  // Safety fallback in case animationend doesn't fire.
+  setTimeout(onEnd, 600);
 }
 
-// --- Effect 4: Golden pulse (infinite) on a target element ---
+// =====================================================================
+// Effect 4 — Golden pulse (infinite on target)
+// =====================================================================
 export function goldenPulse(el) {
   if (!el) return;
   injectStyles();
@@ -348,7 +436,9 @@ export function goldenPulse(el) {
   el.classList.add('qd-golden-pulse');
 }
 
-// --- Effect 5: Streak flame pulse (infinite) on a flame emoji span ---
+// =====================================================================
+// Effect 5 — Streak flame pulse (infinite on flame element)
+// =====================================================================
 export function pulseStreakFlame(flameEl) {
   if (!flameEl) return;
   injectStyles();
@@ -357,26 +447,58 @@ export function pulseStreakFlame(flameEl) {
   flameEl.classList.add('qd-streak-pulse');
 }
 
-// --- Effect 6: Perfect-game backdrop (radial rainbow on result root) ---
-export function perfectGameBackdrop(resultRoot) {
-  if (!resultRoot) return;
+// =====================================================================
+// Effect 6 — Perfect-game backdrop (conic HSL + radial mesh)
+// =====================================================================
+export function perfectGameBackdrop(root) {
+  if (!root) return;
   injectStyles();
-  if (resultRoot.dataset.qdPerfect === '1') return;
-  resultRoot.dataset.qdPerfect = '1';
-  resultRoot.classList.add('qd-perfect-backdrop');
+  if (root.dataset.qdPerfect === '1') return;
+  root.dataset.qdPerfect = '1';
+  // Ensure positioning context without clobbering existing relative.
+  try {
+    const pos = getComputedStyle(root).position;
+    if (pos === 'static' || !pos) root.style.position = 'relative';
+  } catch (e) { /* ignore */ }
+
+  const backdrop = document.createElement('div');
+  backdrop.className = 'qd-perfect-backdrop';
+  const conic = document.createElement('div');
+  conic.className = 'qd-perfect-conic';
+  const mesh = document.createElement('div');
+  mesh.className = 'qd-perfect-mesh';
+  backdrop.appendChild(conic);
+  backdrop.appendChild(mesh);
+  // Insert as first child so it sits behind everything else.
+  if (root.firstChild) root.insertBefore(backdrop, root.firstChild);
+  else root.appendChild(backdrop);
 }
 
-// --- Effect 7: Match-win aura (double gold rings on YOU card) ---
+// =====================================================================
+// Effect 7 — Match-win aura (inner glow + ring pulse + one-shot shockwave)
+// =====================================================================
 export function matchWinAura(el) {
   if (!el) return;
   injectStyles();
   if (el.dataset.qdAura === '1') return;
   el.dataset.qdAura = '1';
+  try {
+    const pos = getComputedStyle(el).position;
+    if (pos === 'static' || !pos) el.style.position = 'relative';
+  } catch (e) { /* ignore */ }
   el.classList.add('qd-match-aura');
+
+  if (prefersReducedMotion()) return; // static glow only
+
+  const shock = document.createElement('div');
+  shock.className = 'qd-match-shockwave';
+  el.appendChild(shock);
+  setTimeout(() => { try { shock.remove(); } catch (e) {} }, 720);
 }
 
-// --- Unlock overlay juice helpers (called from unlockOverlay.js) ---
-// Flash the screen with a golden radial fade.
+// =====================================================================
+// Unlock overlay helpers (called from unlockOverlay.js)
+// =====================================================================
 export function unlockGoldenFlash() {
   injectStyles();
   if (prefersReducedMotion()) return;
@@ -386,35 +508,23 @@ export function unlockGoldenFlash() {
   setTimeout(() => { try { flash.remove(); } catch (e) {} }, 750);
 }
 
-// 40 particles bursting from screen center.
 export function unlockParticleBurst() {
   injectStyles();
-  if (prefersReducedMotion()) return;
-  const host = document.createElement('div');
-  host.className = 'qd-unlock-particles';
-  document.body.appendChild(host);
-  const count = 40;
-  for (let i = 0; i < count; i++) {
-    const p = document.createElement('span');
-    p.className = 'qd-unlock-particle';
-    const angle = (i / count) * Math.PI * 2 + (Math.random() * 0.4 - 0.2);
-    const dist = 140 + Math.random() * 180;
-    const px = Math.cos(angle) * dist;
-    const py = Math.sin(angle) * dist;
-    p.style.setProperty('--qd-px', px + 'px');
-    p.style.setProperty('--qd-py', py + 'px');
-    p.style.animationDelay = (Math.random() * 120) + 'ms';
-    p.style.width  = (5 + Math.random() * 6) + 'px';
-    p.style.height = p.style.width;
-    host.appendChild(p);
-  }
-  setTimeout(() => { try { host.remove(); } catch (e) {} }, 1400);
+  safeConfetti({
+    particleCount: 100,
+    spread: 360,
+    origin: { x: 0.5, y: 0.5 },
+    startVelocity: 30,
+    gravity: 0.3,
+    ticks: 200,
+    colors: ['#FFD700','#FFA500','#FF6B35','#F59E0B','#FFFFFF'],
+    shapes: ['circle','star']
+  });
 }
 
-// Scale-bounce a level number / title element.
 export function unlockLevelBounce(el) {
   if (!el) return;
   injectStyles();
   if (prefersReducedMotion()) return;
-  el.classList.add('qd-unlock-level-bounce');
+  el.classList.add('qd-unlock-bounce');
 }
