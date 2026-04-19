@@ -1,3 +1,8 @@
+import { injectMobileOverrides } from './ui/mobileOverrides.js';
+// Must run before any other UI module injects styles so our !important
+// font overrides land in the cascade after the default stylesheets.
+injectMobileOverrides();
+
 import { Quiz } from './game/quiz.js';
 import { renderQuizScreen, renderFinishScreen } from './game/screens.js';
 import { renderHomeScreen } from './game/home.js';
@@ -11,6 +16,54 @@ import { renderBackground } from './ui/background.js';
 import { attachPowerupBar, applyProBadgeToScore } from './ui/quizHooks.js';
 import { hasStreakFreeze, hasProBadge, getStreakFreezeAvailable, consumeStreakFreeze } from './game/powerups.js';
 import { getLevelFromXP as _getLevelFromXP } from './game/stats.js';
+
+// Stage 7.4c — inter-session ad trigger.
+// After every Nth game, show an interstitial popup at the moment the user
+// navigates AWAY from the Result screen (not during). Counter is persisted
+// so an app reload mid-game doesn't reset the cadence. Feature-flaggable
+// via `localStorage.ads_enabled = '0'` for emergency kill, and dev mode
+// only fires ads when `?ads=1` is on the URL so local testing is clean.
+const GAMES_BEFORE_AD = 3;
+const GAMES_COUNTER_KEY = 'games_since_last_ad';
+const ADS_ENABLED_KEY = 'ads_enabled';
+
+function areAdsEnabled() {
+  try {
+    if (localStorage.getItem(ADS_ENABLED_KEY) === '0') return false;
+  } catch (e) { /* ignore */ }
+  if (import.meta.env.DEV) {
+    try {
+      if (!new URLSearchParams(location.search).get('ads')) return false;
+    } catch (e) { return false; }
+  }
+  return true;
+}
+
+function maybeShowInterstitial() {
+  if (!areAdsEnabled()) return;
+  let curr = 0;
+  try { curr = parseInt(localStorage.getItem(GAMES_COUNTER_KEY) || '0', 10) || 0; } catch (e) {}
+  const next = curr + 1;
+  try {
+    if (next >= GAMES_BEFORE_AD) {
+      localStorage.setItem(GAMES_COUNTER_KEY, '0');
+      // 300ms delay so Result unmount + Home mount transition is visible first.
+      setTimeout(() => {
+        import('./platform/monetag.js')
+          .then((m) => m.showInterstitialPopup())
+          .catch(() => { /* ignore — SDK may be blocked */ });
+      }, 300);
+    } else {
+      localStorage.setItem(GAMES_COUNTER_KEY, String(next));
+    }
+  } catch (e) { /* storage blocked — silently skip */ }
+}
+
+// DEV-only step-by-step finish logger. import.meta.env.DEV is statically
+// replaced by Vite so these calls dead-code-eliminate in production (grep
+// dist/assets for '[finish]' → 0 matches).
+const FLOG_DEV = import.meta.env.DEV;
+function flog(...args) { if (FLOG_DEV) console.log('[finish]', ...args); }
 
 // Streak-Freeze intercept: if the player is about to lose a streak (gap > 1)
 // AND has the unlock AND hasn't used their weekly freeze, backdate the
@@ -360,9 +413,9 @@ async function startMatchResult(match) {
   const resolvedId = myId || match.playerAId || 'web-dev-player';
   app.innerHTML = '';
   renderMatchResult(app, match, resolvedId, platform, {
-    onBackToHome: () => showHome(true),
-    onChallengeBack: () => startChallengeBack(match),
-    onChallengeDifferent: () => startNewMatchFromResult(),
+    onBackToHome: () => { maybeShowInterstitial(); showHome(true); },
+    onChallengeBack: () => { maybeShowInterstitial(); startChallengeBack(match); },
+    onChallengeDifferent: () => { maybeShowInterstitial(); startNewMatchFromResult(); },
     onShareWin: () => shareMatchWin(match, resolvedId)
   });
 }
@@ -437,54 +490,90 @@ function startGame(isDaily) {
   app.innerHTML = '';
   const powerupHandle = attachPowerupBar(app, quiz, platform);
   renderQuizScreen(app, quiz, () => {
-    if (powerupHandle && typeof powerupHandle.detach === 'function') powerupHandle.detach();
-    const bestResult = setBestScoreIfHigher(quiz.score);
-    if (isDaily) maybeApplyStreakFreeze();
-    const streakResult = isDaily ? recordPlay() : null;
-    if (isDaily) saveDailyResult(quiz);
+    // Stage 7.4c — each post-finish side effect is isolated in its own
+    // try/catch so a single mobile-specific failure can't leave the user on
+    // a white screen. Step logs are DEV-gated via flog() so production
+    // bundles carry no console noise.
+    flog('1. onFinish called');
+    try { if (powerupHandle && typeof powerupHandle.detach === 'function') powerupHandle.detach(); }
+    catch (e) { console.error('[finish] powerup detach FAILED:', e && e.message, e && e.stack); }
 
-    const rewards = computeGameRewards(quiz.correctCount, quiz.totalQuestions);
-    const prevXP = getXP();
-    const prevXpPercent = getXPProgressInLevel(prevXP).percent;
-    const xpResult = addXP(rewards.xp);
-    const newXpPercent = getXPProgressInLevel(xpResult.newTotal).percent;
-    addCoins(rewards.coins);
+    let bestResult = null;
+    try { bestResult = setBestScoreIfHigher(quiz.score); flog('2. bestResult:', bestResult); }
+    catch (e) { console.error('[finish] setBestScoreIfHigher FAILED:', e && e.message, e && e.stack); }
+
+    try { if (isDaily) maybeApplyStreakFreeze(); }
+    catch (e) { console.error('[finish] maybeApplyStreakFreeze FAILED:', e && e.message, e && e.stack); }
+
+    let streakResult = null;
+    try { streakResult = isDaily ? recordPlay() : null; }
+    catch (e) { console.error('[finish] recordPlay FAILED:', e && e.message, e && e.stack); }
+
+    try { if (isDaily) saveDailyResult(quiz); }
+    catch (e) { console.error('[finish] saveDailyResult FAILED:', e && e.message, e && e.stack); }
+
+    let rewards = { xp: 0, coins: 0 };
+    let xpResult = { newTotal: 0, prevLevel: 1, newLevel: 1, leveledUp: false };
+    let prevXpPercent = 0, newXpPercent = 0;
+    try {
+      rewards = computeGameRewards(quiz.correctCount, quiz.totalQuestions);
+      flog('3. rewards:', rewards);
+      const prevXP = getXP();
+      prevXpPercent = getXPProgressInLevel(prevXP).percent;
+      xpResult = addXP(rewards.xp);
+      newXpPercent = getXPProgressInLevel(xpResult.newTotal).percent;
+      addCoins(rewards.coins);
+    } catch (e) { console.error('[finish] rewards/XP/coins FAILED:', e && e.message, e && e.stack); }
 
     // Consume the challenge — one play-through per incoming URL.
     if (activeChallenge) {
       incomingChallenge = null;
     }
 
-    app.innerHTML = '';
-    renderFinishScreen(app, quiz, {
-      onPlayAgain: () => showHome(true),
-      onShare: (score, correct) => shareScore(score, correct, quiz.answerHistory),
-      onChallenge: (score) => onChallengeClick(score),
-      onKeepPlaying: () => startGame(false),
-      bestResult,
-      streakResult,
-      isDaily,
-      challengeTarget: activeChallenge,
-      xpEarned: rewards.xp,
-      coinsEarned: rewards.coins,
-      leveledUp: xpResult.leveledUp,
-      prevLevel: xpResult.prevLevel,
-      newLevel: xpResult.newLevel,
-      prevXpPercent,
-      newXpPercent: xpResult.leveledUp ? 100 : newXpPercent
-    });
-    // Pro Badge decoration — post-render decorator is safe because
-    // renderFinishScreen is synchronous. No-op if the selector is absent.
-    if (hasProBadge(xpResult.newLevel || _getLevelFromXP(xpResult.newTotal))) {
-      applyProBadgeToScore(app, 'PRO');
+    try {
+      flog('4. renderFinishScreen starting');
+      app.innerHTML = '';
+      renderFinishScreen(app, quiz, {
+        onPlayAgain: () => { maybeShowInterstitial(); showHome(true); },
+        onShare: (score, correct) => shareScore(score, correct, quiz.answerHistory),
+        onChallenge: (score) => onChallengeClick(score),
+        onKeepPlaying: () => { maybeShowInterstitial(); startGame(false); },
+        bestResult,
+        streakResult,
+        isDaily,
+        challengeTarget: activeChallenge,
+        xpEarned: rewards.xp,
+        coinsEarned: rewards.coins,
+        leveledUp: xpResult.leveledUp,
+        prevLevel: xpResult.prevLevel,
+        newLevel: xpResult.newLevel,
+        prevXpPercent,
+        newXpPercent: xpResult.leveledUp ? 100 : newXpPercent
+      });
+      // z-index defense — keep Result above any residual Monetag overlay.
+      const finishRoot = app.querySelector('.qd-finish');
+      if (finishRoot) {
+        if (!finishRoot.style.zIndex) finishRoot.style.zIndex = '100';
+        if (!finishRoot.style.position) finishRoot.style.position = 'relative';
+      }
+      flog('5. renderFinishScreen done, DOM .qd-finish:', !!document.querySelector('.qd-finish'));
+    } catch (e) {
+      console.error('[finish] renderFinishScreen FAILED:', e && e.message, e && e.stack);
     }
 
-    // Stage 7.2 juice — layered on top of the already-rendered Result.
-    // Order matters: perfect-game is the biggest payload, then new-best,
-    // then the XP level-up confetti already handled by renderFinishScreen
-    // internally. Each helper is idempotent and respects reduced-motion.
+    // Pro Badge decoration — post-render decorator is safe because
+    // renderFinishScreen is synchronous. No-op if the selector is absent.
+    try {
+      if (hasProBadge(xpResult.newLevel || _getLevelFromXP(xpResult.newTotal))) {
+        applyProBadgeToScore(app, 'PRO');
+      }
+    } catch (e) { console.error('[finish] applyProBadgeToScore FAILED:', e && e.message, e && e.stack); }
+
+    // Stage 7.2 juice — perfect-game > new-best > good-game baseline.
+    // Each helper is idempotent + honours prefers-reduced-motion.
     (async () => {
       try {
+        flog('6. juice import starting');
         const { triggerConfetti, goldenPulse, perfectGameBackdrop } =
           await import('./ui/juiceEffects.js');
         const isPerfect = quiz.correctCount === quiz.totalQuestions;
@@ -492,19 +581,34 @@ function startGame(isDaily) {
         const accuracy = quiz.totalQuestions > 0 ? quiz.correctCount / quiz.totalQuestions : 0;
         const isGoodGame = accuracy >= 0.6;
         const scoreEl = app.querySelector('.qd-finish-score-big');
-
+        flog('7. juice about to fire:', { isPerfect, isNewBest, isGoodGame });
         if (isPerfect) {
-          perfectGameBackdrop(app);
-          triggerConfetti(app, 'perfect');
-          if (scoreEl) goldenPulse(scoreEl);
+          try { perfectGameBackdrop(app); } catch (e) { console.error('[finish] perfectGameBackdrop FAILED:', e); }
+          try { triggerConfetti(app, 'perfect'); } catch (e) { console.error('[finish] triggerConfetti(perfect) FAILED:', e); }
+          try { if (scoreEl) goldenPulse(scoreEl); } catch (e) { console.error('[finish] goldenPulse FAILED:', e); }
         } else if (isNewBest) {
-          triggerConfetti(app, 'record');
-          if (scoreEl) goldenPulse(scoreEl);
+          try { triggerConfetti(app, 'record'); } catch (e) { console.error('[finish] triggerConfetti(record) FAILED:', e); }
+          try { if (scoreEl) goldenPulse(scoreEl); } catch (e) { console.error('[finish] goldenPulse FAILED:', e); }
         } else if (isGoodGame) {
-          triggerConfetti(app, 'complete');
+          try { triggerConfetti(app, 'complete'); } catch (e) { console.error('[finish] triggerConfetti(complete) FAILED:', e); }
         }
-      } catch (e) { /* juice never breaks the flow */ }
+        flog('8. juice done');
+      } catch (e) { console.error('[finish] juiceEffects import FAILED:', e && e.message, e && e.stack); }
     })();
+
+    // 500ms safety net — if neither Result DOM appeared, force Home so the
+    // user is never stuck on a blank screen. Covers the edge case where
+    // renderFinishScreen or a sync side-effect above threw silently AND no
+    // error was caught (shouldn't happen now with the try/catches, but is
+    // cheap insurance).
+    setTimeout(() => {
+      const hasFinish = !!document.querySelector('.qd-finish');
+      const hasMatchResult = !!document.querySelector('.qd-matchresult');
+      if (!hasFinish && !hasMatchResult) {
+        console.error('[finish] Result DOM missing after 500ms — forcing Home as fallback');
+        try { showHome(true); } catch (e) { /* last-resort, nothing else to try */ }
+      }
+    }, 500);
   });
 }
 
@@ -522,7 +626,7 @@ function showStoredDailyResult() {
   };
   app.innerHTML = '';
   renderFinishScreen(app, mockQuiz, {
-    onPlayAgain: () => showHome(true),
+    onPlayAgain: () => { maybeShowInterstitial(); showHome(true); },
     onShare: (score, correct) => shareScore(score, correct, stored.history || []),
     onChallenge: (score) => onChallengeClick(score),
     bestResult: null,

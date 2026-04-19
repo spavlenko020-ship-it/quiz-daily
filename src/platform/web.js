@@ -1,4 +1,4 @@
-import { showRewardedAd, showRewardedPopup } from './monetag.js';
+import { showRewardedAd, showInterstitialPopup } from './monetag.js';
 
 function isMobile() {
   return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -29,7 +29,7 @@ const platform = {
   },
   async showAd(type) {
     if (type === 'rewarded') return await showRewardedAd();
-    if (type === 'popup') return await showRewardedPopup();
+    if (type === 'popup') return await showInterstitialPopup();
     return false;
   },
   async getLeaderboard() { return []; },

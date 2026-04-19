@@ -477,6 +477,10 @@ export function renderMatchResult(container, match, currentPlayerId, platform, c
   root.appendChild(actions);
 
   container.appendChild(root);
+  // Stage 7.4c — z-index defense so Result sits above any residual Monetag
+  // overlay that might linger in the DOM.
+  if (!root.style.zIndex) root.style.zIndex = '100';
+  if (!root.style.position) root.style.position = 'relative';
 
   // Pro Badge decoration on the viewer's score card when level ≥ 10.
   if (hasProBadge(getLevelFromXP(getXP()))) {

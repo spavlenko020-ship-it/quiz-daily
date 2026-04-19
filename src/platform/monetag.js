@@ -43,10 +43,13 @@ export async function showRewardedAd() {
 }
 
 // ---------------------------------------------------------------------------
-// Rewarded popup — smaller off-page format. Not currently wired from any
-// caller; kept as an API affordance for future growth experiments.
+// Interstitial popup — user-dismissable off-page format, used for the
+// inter-session ad fired every 3rd game by main.js `maybeShowInterstitial`.
+// Does NOT require rewarded-video completion — callers don't depend on the
+// return value to gate any reward. Stage 7.4c renamed from showRewardedPopup
+// for clarity; the underlying SDK call shape is unchanged.
 // ---------------------------------------------------------------------------
-export async function showRewardedPopup() {
+export async function showInterstitialPopup() {
   const fn = getAdFn();
   if (!fn) return false;
   try {

@@ -24,7 +24,18 @@ async function setupGraph() {
   if (initialized) return;
   initialized = true;
 
-  masterVol = new Tone.Volume(isMobile ? 2 : -4).toDestination();
+  // Stage 7.4c — on mobile, route through a Compressor (threshold -6 dBFS,
+  // ratio 4:1) before destination so the +8 dB boost feels louder without
+  // clipping transients like the fanfare or correct-answer chime. Desktop
+  // keeps the original -4 dB direct-to-destination path.
+  if (isMobile) {
+    const compressor = new Tone.Compressor({
+      threshold: -6, ratio: 4, attack: 0.003, release: 0.25
+    }).toDestination();
+    masterVol = new Tone.Volume(8).connect(compressor);
+  } else {
+    masterVol = new Tone.Volume(-4).toDestination();
+  }
   if (muted) masterVol.mute = true;
 
   try {
