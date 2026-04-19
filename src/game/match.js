@@ -49,7 +49,7 @@ export class Match {
     this.createdAt = data.createdAt || Date.now();
   }
 
-  static create(opponentData, questionPool) {
+  static create(opponentData, questionPool, creatorId = 'me') {
     const contextId = opponentData && opponentData.contextId ? opponentData.contextId : 'local-' + Date.now();
     const seed = (dateSeed() ^ hashString(contextId)) >>> 0;
     const rng = mulberry32(seed);
@@ -61,13 +61,19 @@ export class Match {
       questions: questionIds,
       playerAScore: null,
       playerBScore: null,
-      playerAId: 'me',
+      playerAId: creatorId || 'me',
       playerBId: opponentData && opponentData.opponent ? opponentData.opponent.id : null,
       opponent: opponentData && opponentData.opponent ? opponentData.opponent : null,
       status: 'pending_a',
       winnerId: null,
       createdAt: Date.now()
     });
+  }
+
+  getPlayerSlot(playerId) {
+    if (playerId === this.playerAId) return 'a';
+    if (playerId === this.playerBId) return 'b';
+    return null;
   }
 
   serialize() {

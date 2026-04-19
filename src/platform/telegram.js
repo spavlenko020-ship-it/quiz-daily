@@ -15,6 +15,7 @@ const platform = {
   getMatchContext() { console.log('[TG stub] getMatchContext not implemented yet'); return null; },
   async sendMatchUpdate(payload) { console.log('[TG stub] sendMatchUpdate not implemented yet'); return false; },
   async getContextData() { console.log('[TG stub] getContextData not implemented yet'); return null; },
-  async setContextData(matchJson) { console.log('[TG stub] setContextData not implemented yet'); return false; }
+  async setContextData(matchJson) { console.log('[TG stub] setContextData not implemented yet'); return false; },
+  getPlayerId() { console.log('[TG stub] getPlayerId not implemented yet'); return null; }
 };
 export default platform;

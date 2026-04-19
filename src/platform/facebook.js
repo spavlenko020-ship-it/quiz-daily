@@ -147,6 +147,10 @@ const platform = {
       console.error('[FB] setContextData failed:', e);
       return false;
     }
+  },
+
+  getPlayerId() {
+    try { return FBInstant.player.getID(); } catch (e) { return null; }
   }
 };
 

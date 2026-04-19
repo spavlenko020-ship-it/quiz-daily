@@ -72,6 +72,8 @@ const platform = {
       console.log('[web mock] setContextData saved');
       return true;
     } catch (e) { return false; }
-  }
+  },
+
+  getPlayerId() { return 'web-dev-player'; }
 };
 export default platform;

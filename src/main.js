@@ -176,7 +176,9 @@ async function onPlayWithFriendClick() {
       import('./game/questions.js'),
       import('./game/matchStore.js')
     ]);
-    const match = Match.create(picked, questions);
+    const creatorId = (platform && typeof platform.getPlayerId === 'function')
+      ? platform.getPlayerId() : null;
+    const match = Match.create(picked, questions, creatorId || 'web-dev-player');
     await saveMatch(match, platform);
     await startMatchLobby(match);
     return true;
@@ -190,7 +192,54 @@ async function onPlayWithFriendClick() {
 async function startMatchLobby(match) {
   const { renderMatchLobby } = await import('./game/matchLobby.js');
   app.innerHTML = '';
-  renderMatchLobby(app, match, platform, () => showHome(true));
+  renderMatchLobby(app, match, platform,
+    () => showHome(true),
+    () => startMatchQuiz(match)
+  );
+}
+
+async function startMatchQuiz(match) {
+  const { renderMatchQuizScreen } = await import('./game/matchQuiz.js');
+  app.innerHTML = '';
+  renderMatchQuizScreen(app, match, platform, {
+    onComplete: async (finalScore) => {
+      const myId = (platform && typeof platform.getPlayerId === 'function')
+        ? platform.getPlayerId() : null;
+      const resolvedId = myId || match.playerAId || 'web-dev-player';
+      match.recordScore(resolvedId, finalScore);
+      const { saveMatch } = await import('./game/matchStore.js');
+      await saveMatch(match, platform);
+      startMatchWaiting(match);
+    },
+    onAbort: () => startMatchLobby(match)
+  });
+}
+
+async function startMatchWaiting(match) {
+  const { renderMatchWaiting } = await import('./game/matchWaiting.js');
+  app.innerHTML = '';
+  const waitingCallbacks = { onBackToHome: () => showHome(true) };
+  if (import.meta.env.DEV) {
+    waitingCallbacks.onSimulateOpponent = async (oppScore) => {
+      const oppId = (match.opponent && match.opponent.id) ? match.opponent.id : 'mock-opp-1';
+      match.recordScore(oppId, oppScore);
+      const { saveMatch } = await import('./game/matchStore.js');
+      await saveMatch(match, platform);
+      startMatchResult(match);
+    };
+  }
+  renderMatchWaiting(app, match, platform, waitingCallbacks);
+}
+
+async function startMatchResult(match) {
+  const { renderMatchResult } = await import('./game/matchResult.js');
+  const myId = (platform && typeof platform.getPlayerId === 'function')
+    ? platform.getPlayerId() : null;
+  const resolvedId = myId || match.playerAId || 'web-dev-player';
+  app.innerHTML = '';
+  renderMatchResult(app, match, resolvedId, {
+    onBackToHome: () => showHome(true)
+  });
 }
 
 function startGame(isDaily) {

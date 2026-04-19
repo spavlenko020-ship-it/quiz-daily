@@ -68,7 +68,15 @@ export const translations = {
     yourOpponent: "Your opponent",
     matchInfo: "6 questions. You play first.",
     startYourTurn: "Start Your Turn",
-    backToHome: "Back to Home"
+    backToHome: "Back to Home",
+    matchWaitingTitle: "Waiting for opponent",
+    yourScore: "Your score: {score}",
+    opponentTurnHint: "{name} will play the same 6 questions. You'll get a notification when they finish.",
+    matchComplete: "Match Complete",
+    youWon: "You won! 🏆",
+    youLost: "You lost.",
+    itsATie: "It's a tie.",
+    questionCounter: "Question {n} / {total}"
   },
   uk: {
     appName: "Щоденний Квіз",
@@ -139,7 +147,15 @@ export const translations = {
     yourOpponent: "Твій суперник",
     matchInfo: "6 питань. Ти граєш першим.",
     startYourTurn: "Почати свій хід",
-    backToHome: "На головну"
+    backToHome: "На головну",
+    matchWaitingTitle: "Чекаємо на суперника",
+    yourScore: "Твій рахунок: {score}",
+    opponentTurnHint: "{name} зіграє ті самі 6 питань. Ми повідомимо коли закінчить.",
+    matchComplete: "Матч завершено",
+    youWon: "Ти переміг! 🏆",
+    youLost: "Ти програв.",
+    itsATie: "Нічия.",
+    questionCounter: "Питання {n} / {total}"
   },
   no: {
     appName: "Daglig Quiz",
@@ -210,7 +226,15 @@ export const translations = {
     yourOpponent: "Din motstander",
     matchInfo: "6 spørsmål. Du spiller først.",
     startYourTurn: "Start din runde",
-    backToHome: "Til hjem"
+    backToHome: "Til hjem",
+    matchWaitingTitle: "Venter på motstander",
+    yourScore: "Din poengsum: {score}",
+    opponentTurnHint: "{name} spiller de samme 6 spørsmålene. Du får varsling når de er ferdige.",
+    matchComplete: "Kamp fullført",
+    youWon: "Du vant! 🏆",
+    youLost: "Du tapte.",
+    itsATie: "Uavgjort.",
+    questionCounter: "Spørsmål {n} / {total}"
   }
 };
 

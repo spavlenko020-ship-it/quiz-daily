@@ -183,7 +183,7 @@ function injectLobbyStyles() {
   document.head.appendChild(style);
 }
 
-export function renderMatchLobby(container, match, platform, onBack) {
+export function renderMatchLobby(container, match, platform, onBack, onStartTurn) {
   injectLobbyStyles();
   container.innerHTML = '';
   container.style.background = 'transparent';
@@ -249,19 +249,25 @@ export function renderMatchLobby(container, match, platform, onBack) {
   info.textContent = t('matchInfo');
   root.appendChild(info);
 
-  // Disabled primary button (Stage 6.4 will wire this)
   const startBtn = document.createElement('button');
   startBtn.type = 'button';
   startBtn.className = 'qd-lobby-primary';
-  startBtn.disabled = true;
-  startBtn.setAttribute('aria-disabled', 'true');
   startBtn.textContent = t('startYourTurn');
-  root.appendChild(startBtn);
-
-  const startHint = document.createElement('div');
-  startHint.className = 'qd-lobby-primary-hint';
-  startHint.textContent = 'Coming in next update';
-  root.appendChild(startHint);
+  if (onStartTurn) {
+    startBtn.addEventListener('click', () => {
+      playClick();
+      onStartTurn();
+    });
+  } else {
+    startBtn.disabled = true;
+    startBtn.setAttribute('aria-disabled', 'true');
+    const startHint = document.createElement('div');
+    startHint.className = 'qd-lobby-primary-hint';
+    startHint.textContent = 'Coming in next update';
+    root.appendChild(startBtn);
+    root.appendChild(startHint);
+  }
+  if (onStartTurn) root.appendChild(startBtn);
 
   // Secondary back-to-home
   const secondary = document.createElement('button');
