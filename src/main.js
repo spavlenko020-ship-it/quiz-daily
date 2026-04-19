@@ -150,14 +150,73 @@ function showHome(fromGame = false) {
   if (fromGame) sessionStorage.setItem('quiz_returned_home', '1');
   app.innerHTML = '';
   const showBanner = typeof incomingChallenge === 'number' && incomingChallenge > 0;
+  const myId = (platform && typeof platform.getPlayerId === 'function')
+    ? (platform.getPlayerId() || 'web-dev-player')
+    : 'web-dev-player';
   renderHomeScreen(app, {
     onPlayDaily: () => startGame(true),
     onPlayQuick: () => startGame(false),
     onViewDailyResult: () => showStoredDailyResult(),
     onPlayWithFriend: onPlayWithFriendClick,
+    loadMatches: async () => {
+      try {
+        const { loadAllMatches } = await import('./game/matchStore.js');
+        return await loadAllMatches(platform);
+      } catch (e) {
+        console.error('[main] loadAllMatches failed:', e);
+        return [];
+      }
+    },
+    onResumeMatch: (match) => navigateToMatch(match),
+    onViewAllMatches: () => startMatchesInbox(),
+    currentPlayerId: myId,
     hasChallenge: showBanner,
     incomingChallenge: showBanner ? incomingChallenge : null
   });
+}
+
+async function startMatchesInbox() {
+  try {
+    const [{ loadAllMatches }, { renderMatchesInbox }] = await Promise.all([
+      import('./game/matchStore.js'),
+      import('./game/matchesInbox.js')
+    ]);
+    const matches = await loadAllMatches(platform);
+    const myId = (platform && typeof platform.getPlayerId === 'function')
+      ? (platform.getPlayerId() || 'web-dev-player')
+      : 'web-dev-player';
+    app.innerHTML = '';
+    renderMatchesInbox(app, matches, myId, {
+      onBack: () => showHome(true),
+      onResumeMatch: (m) => navigateToMatch(m)
+    });
+  } catch (e) {
+    console.error('[main] startMatchesInbox failed:', e);
+    showHome(true);
+  }
+}
+
+function navigateToMatch(match) {
+  if (!match) return;
+  const myId = (platform && typeof platform.getPlayerId === 'function')
+    ? (platform.getPlayerId() || 'web-dev-player')
+    : 'web-dev-player';
+  const slot = typeof match.getPlayerSlot === 'function' ? match.getPlayerSlot(myId) : null;
+
+  if (match.status === 'complete') {
+    // Either fresh result (just completed) or revisit — Result screen handles
+    // both idempotently via the rewardsClaimed flag.
+    startMatchResult(match);
+    return;
+  }
+  if ((match.status === 'pending_a' && slot === 'a')
+   || (match.status === 'pending_b' && slot === 'b')) {
+    // It's the viewer's turn — open the Lobby so they can hit Start Your Turn.
+    startMatchLobby(match);
+    return;
+  }
+  // Otherwise: viewer has already played and is waiting for opponent.
+  startMatchWaiting(match);
 }
 
 async function onPlayWithFriendClick() {
@@ -387,16 +446,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   initAudio();
   renderLangSwitcher();
   renderSoundToggle();
-  // Resume to Match Result if a completed match is sitting in persisted context
-  // and rewards haven't been claimed yet. This is the production path that
-  // gets the user to Result after the opponent finishes their turn (on FB:
-  // via Messenger push; on web: via the DEV simulate button). One-shot: after
-  // rendering, applyMatchReward sets rewardsClaimed so a later boot skips it.
+  // Resume to Match Result if ANY completed+unclaimed match exists (Stage 6.6).
+  // Picks the newest one via loadAllMatches sort (createdAt desc) and navigates
+  // directly to its Result. One-shot: applyMatchReward flips rewardsClaimed,
+  // so subsequent boots fall through to Home.
   try {
-    const { loadMatch } = await import('./game/matchStore.js');
-    const existing = await loadMatch(platform);
-    if (existing && existing.status === 'complete' && !existing.rewardsClaimed) {
-      startMatchResult(existing);
+    const { loadAllMatches } = await import('./game/matchStore.js');
+    const all = await loadAllMatches(platform);
+    const unclaimedResult = all.find(
+      (m) => m && m.status === 'complete' && !m.rewardsClaimed
+    );
+    if (unclaimedResult) {
+      startMatchResult(unclaimedResult);
       return;
     }
   } catch (e) { /* ignore — fall through to Home */ }

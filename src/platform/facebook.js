@@ -129,19 +129,28 @@ const platform = {
 
   // NOTE: FB rate-limits player.setDataAsync to ~1 write / 2s.
   // This wrapper does not debounce — callers (matchStore and up) must throttle.
+  // Contract (Stage 6.6+): reads/writes the whole `matches` namespace object
+  // { [contextId]: serializedMatchJson }. matchStore does the merge/split.
+  // The legacy `match` key is also returned if present so matchStore can migrate.
   async getContextData() {
     try {
-      const data = await FBInstant.player.getDataAsync(['match']);
-      return data && data.match ? data.match : null;
+      const data = await FBInstant.player.getDataAsync(['matches', 'match']);
+      return {
+        matches: (data && data.matches && typeof data.matches === 'object') ? data.matches : {},
+        legacyMatch: data && data.match ? data.match : null
+      };
     } catch (e) {
       console.error('[FB] getContextData failed:', e);
-      return null;
+      return { matches: {}, legacyMatch: null };
     }
   },
 
-  async setContextData(matchJson) {
+  async setContextData(payload) {
     try {
-      await FBInstant.player.setDataAsync({ match: matchJson });
+      const obj = { matches: (payload && payload.matches) ? payload.matches : {} };
+      // If migration is requested, also null-out the legacy single-match key.
+      if (payload && payload.clearLegacy) obj.match = null;
+      await FBInstant.player.setDataAsync(obj);
       return true;
     } catch (e) {
       console.error('[FB] setContextData failed:', e);

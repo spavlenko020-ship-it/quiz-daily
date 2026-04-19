@@ -467,6 +467,165 @@ function injectHomeStyles() {
       letter-spacing: 0.01em;
       line-height: 1.2;
     }
+    /* Red "your turn" badge anchored top-right of the Play-with-Friend button. */
+    .qd-home-play-friend .qd-turn-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      min-width: 22px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: #EF4444;
+      color: #ffffff;
+      font-family: ${theme.fonts.display};
+      font-weight: 800;
+      font-size: 0.75rem;
+      line-height: 22px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(239,68,68,0.5), 0 0 0 2px rgba(5,2,15,0.85);
+      letter-spacing: 0;
+      display: none;
+    }
+    .qd-home-play-friend .qd-turn-badge.is-visible { display: inline-block; }
+
+    /* Active Matches inbox — sits between Quick Play and the Level card.
+       Hidden by default; revealed when callbacks.loadMatches resolves with ≥1 entry. */
+    .qd-home-inbox {
+      margin-top: 1rem;
+      width: 100%;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .qd-home-inbox.is-visible { display: flex; }
+    .qd-home-inbox-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 0 4px;
+    }
+    .qd-home-inbox-title {
+      font-family: ${theme.fonts.display};
+      font-weight: 700;
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: ${c.textMuted};
+    }
+    .qd-home-inbox-count {
+      font-family: ${theme.fonts.display};
+      font-weight: 700;
+      font-size: 0.82rem;
+      color: ${c.textMuted};
+      font-variant-numeric: tabular-nums;
+    }
+    .qd-inbox-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: ${r.lg};
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      text-align: left;
+      color: ${c.text};
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+    .qd-inbox-card:hover {
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.14);
+    }
+    .qd-inbox-card:active { transform: translateY(1px); }
+    .qd-inbox-card.is-yourturn { border-color: rgba(16,185,129,0.4); }
+    .qd-inbox-card.is-result { border-color: rgba(255,193,7,0.45); }
+    .qd-inbox-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+      font-size: 1.2rem;
+      color: ${c.textMuted};
+    }
+    .qd-inbox-avatar img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .qd-inbox-text {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .qd-inbox-name {
+      font-family: ${theme.fonts.display};
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: ${c.text};
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .qd-inbox-status {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: ${c.textMuted};
+    }
+    .qd-inbox-status.qd-status-yourturn {
+      color: #10B981;
+      animation: qdInboxPulse 1.8s ease-in-out infinite;
+    }
+    .qd-inbox-status.qd-status-newresult { color: #FFD54F; }
+    @keyframes qdInboxPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+    .qd-inbox-chevron {
+      color: rgba(255,255,255,0.35);
+      font-size: 1.1rem;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    .qd-home-inbox-viewall {
+      background: transparent;
+      border: none;
+      font-family: ${theme.fonts.body};
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: ${c.textDim};
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-color: ${c.stroke};
+      text-underline-offset: 3px;
+      padding: 6px 8px;
+      align-self: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .qd-home-inbox-viewall:hover { color: ${c.text}; }
+    .qd-inbox-skeleton {
+      height: 56px;
+      border-radius: ${r.lg};
+      background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      background-size: 200% 100%;
+      animation: qdInboxSkel 1.2s ease-in-out infinite;
+    }
+    @keyframes qdInboxSkel {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
 
     .qd-level-card {
       display: flex;
@@ -574,7 +733,7 @@ export function renderHomeScreen(container, callbacks = {}) {
     setTimeout(() => playWhoosh(), 100);
   }
 
-  const { onPlayDaily, onPlayQuick, onViewDailyResult, onPlayWithFriend, hasChallenge, incomingChallenge } = callbacks;
+  const { onPlayDaily, onPlayQuick, onViewDailyResult, onPlayWithFriend, hasChallenge, incomingChallenge, loadMatches, onResumeMatch, onViewAllMatches, currentPlayerId } = callbacks;
 
   const best = getBestScore();
   const streak = getStreak();
@@ -831,8 +990,14 @@ export function renderHomeScreen(container, callbacks = {}) {
     textCol.appendChild(label);
     textCol.appendChild(sub);
 
+    const turnBadge = document.createElement('span');
+    turnBadge.id = 'qd-turn-badge';
+    turnBadge.className = 'qd-turn-badge';
+    turnBadge.textContent = '0';
+
     friendBtn.appendChild(icon);
     friendBtn.appendChild(textCol);
+    friendBtn.appendChild(turnBadge);
 
     friendBtn.addEventListener('click', async () => {
       if (friendBtn.classList.contains('is-loading')) return;
@@ -873,6 +1038,154 @@ export function renderHomeScreen(container, callbacks = {}) {
   quickPlayWrap.appendChild(quickPlayBtn);
   quickPlayWrap.appendChild(quickPlayHint);
   root.appendChild(quickPlayWrap);
+
+  // Active Matches inbox — hidden until loadMatches resolves with ≥1 entry.
+  const inbox = document.createElement('section');
+  inbox.className = 'qd-home-inbox';
+  inbox.setAttribute('aria-live', 'polite');
+  root.appendChild(inbox);
+
+  if (typeof loadMatches === 'function') {
+    // Non-blocking async fetch. Render a single skeleton card during the delay,
+    // cleared either on resolve or after 800ms (gives the section a bit of
+    // visual stability rather than flickering in/out).
+    const skel = document.createElement('div');
+    skel.className = 'qd-inbox-skeleton';
+    inbox.appendChild(skel);
+    inbox.classList.add('is-visible');
+
+    loadMatches().then((list) => {
+      const arr = Array.isArray(list) ? list : [];
+
+      // Compute "your-turn" count and update the red badge on the friend button.
+      const turnBadgeEl = document.getElementById('qd-turn-badge');
+      if (turnBadgeEl) {
+        const myId = currentPlayerId || null;
+        const turnCount = arr.filter((m) => {
+          if (!m || m.status === 'complete') return false;
+          const slot = typeof m.getPlayerSlot === 'function' ? m.getPlayerSlot(myId) : null;
+          // pending_a = waiting on player A to play; player A has turn.
+          // pending_b = waiting on player B to play; player B has turn.
+          return (m.status === 'pending_a' && slot === 'a')
+              || (m.status === 'pending_b' && slot === 'b');
+        }).length;
+        if (turnCount > 0) {
+          turnBadgeEl.textContent = String(turnCount);
+          turnBadgeEl.classList.add('is-visible');
+        } else {
+          turnBadgeEl.classList.remove('is-visible');
+        }
+      }
+
+      inbox.innerHTML = '';
+      if (arr.length === 0) {
+        inbox.classList.remove('is-visible');
+        return;
+      }
+      inbox.classList.add('is-visible');
+
+      const header = document.createElement('div');
+      header.className = 'qd-home-inbox-header';
+      const titleEl = document.createElement('span');
+      titleEl.className = 'qd-home-inbox-title';
+      titleEl.textContent = t('activeMatches');
+      const countEl = document.createElement('span');
+      countEl.className = 'qd-home-inbox-count';
+      countEl.textContent = '(' + arr.length + ')';
+      header.appendChild(titleEl);
+      header.appendChild(countEl);
+      inbox.appendChild(header);
+
+      const displayList = arr.slice(0, 5);
+      for (const m of displayList) {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'qd-inbox-card';
+
+        const myId = currentPlayerId || null;
+        const slot = typeof m.getPlayerSlot === 'function' ? m.getPlayerSlot(myId) : null;
+        const oppName = (m.opponent && m.opponent.name) ? m.opponent.name : '—';
+        const oppPhoto = m.opponent && m.opponent.photo ? m.opponent.photo : '';
+
+        // Determine status label + modifier classes.
+        let statusText = '';
+        let statusClass = '';
+        let cardModifier = '';
+        if (m.status === 'complete') {
+          if (m.rewardsClaimed) {
+            statusText = t('finished');
+            statusClass = '';
+          } else {
+            statusText = t('newResult');
+            statusClass = 'qd-status-newresult';
+            cardModifier = 'is-result';
+          }
+        } else if ((m.status === 'pending_a' && slot === 'a')
+                || (m.status === 'pending_b' && slot === 'b')) {
+          statusText = t('yourTurn');
+          statusClass = 'qd-status-yourturn';
+          cardModifier = 'is-yourturn';
+        } else {
+          statusText = t('waitingFor', { name: oppName });
+        }
+        if (cardModifier) card.classList.add(cardModifier);
+
+        const avatar = document.createElement('span');
+        avatar.className = 'qd-inbox-avatar';
+        if (oppPhoto) {
+          const img = document.createElement('img');
+          img.src = oppPhoto;
+          img.alt = '';
+          img.onerror = () => { avatar.innerHTML = '👤'; };
+          avatar.appendChild(img);
+        } else {
+          avatar.textContent = '👤';
+        }
+
+        const textCol = document.createElement('span');
+        textCol.className = 'qd-inbox-text';
+        const nameEl = document.createElement('span');
+        nameEl.className = 'qd-inbox-name';
+        nameEl.textContent = oppName;
+        const statusEl = document.createElement('span');
+        statusEl.className = 'qd-inbox-status' + (statusClass ? ' ' + statusClass : '');
+        statusEl.textContent = statusText;
+        textCol.appendChild(nameEl);
+        textCol.appendChild(statusEl);
+
+        const chevron = document.createElement('span');
+        chevron.className = 'qd-inbox-chevron';
+        chevron.textContent = '›';
+
+        card.appendChild(avatar);
+        card.appendChild(textCol);
+        card.appendChild(chevron);
+
+        card.addEventListener('click', () => {
+          playClick();
+          if (onResumeMatch) onResumeMatch(m);
+        });
+        inbox.appendChild(card);
+      }
+
+      // "View all (N)" link when list exceeds cap.
+      if (arr.length > 5 && typeof onViewAllMatches === 'function') {
+        const viewAllBtn = document.createElement('button');
+        viewAllBtn.type = 'button';
+        viewAllBtn.className = 'qd-home-inbox-viewall';
+        viewAllBtn.textContent = t('viewAll', { n: arr.length });
+        viewAllBtn.addEventListener('click', () => {
+          playClick();
+          onViewAllMatches();
+        });
+        inbox.appendChild(viewAllBtn);
+      }
+    }).catch((e) => {
+      console.error('[home] loadMatches failed:', e);
+      inbox.innerHTML = '';
+      inbox.classList.remove('is-visible');
+    });
+  }
 
   const xp = getXP();
   const coins = getCoins();

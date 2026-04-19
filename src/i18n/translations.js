@@ -84,7 +84,13 @@ export const translations = {
     challengeBack: "Challenge {name} Back ⚔️",
     challengeDifferentFriend: "Challenge Different Friend",
     shareWin: "Share Win 📣",
-    shareWinText: "I beat {oppName} {myScore} : {oppScore} in Daily Quiz! Try to beat me 🎯"
+    shareWinText: "I beat {oppName} {myScore} : {oppScore} in Daily Quiz! Try to beat me 🎯",
+    activeMatches: "Active Matches",
+    yourTurn: "Your turn",
+    waitingFor: "Waiting for {name}",
+    newResult: "New result!",
+    finished: "Finished",
+    viewAll: "View all ({n})"
   },
   uk: {
     appName: "Щоденний Квіз",
@@ -171,7 +177,13 @@ export const translations = {
     challengeBack: "Викликати {name} знов ⚔️",
     challengeDifferentFriend: "Викликати іншого друга",
     shareWin: "Похвастатись 📣",
-    shareWinText: "Обіграв {oppName} {myScore} : {oppScore} у Daily Quiz! Спробуй побити мій рахунок 🎯"
+    shareWinText: "Обіграв {oppName} {myScore} : {oppScore} у Daily Quiz! Спробуй побити мій рахунок 🎯",
+    activeMatches: "Активні матчі",
+    yourTurn: "Твій хід",
+    waitingFor: "Чекає на {name}",
+    newResult: "Новий результат!",
+    finished: "Завершено",
+    viewAll: "Усі ({n})"
   },
   no: {
     appName: "Daglig Quiz",
@@ -258,7 +270,13 @@ export const translations = {
     challengeBack: "Utfordre {name} igjen ⚔️",
     challengeDifferentFriend: "Utfordre en annen venn",
     shareWin: "Del seier 📣",
-    shareWinText: "Jeg slo {oppName} {myScore} : {oppScore} i Daily Quiz! Prøv å slå meg 🎯"
+    shareWinText: "Jeg slo {oppName} {myScore} : {oppScore} i Daily Quiz! Prøv å slå meg 🎯",
+    activeMatches: "Aktive kamper",
+    yourTurn: "Din runde",
+    waitingFor: "Venter på {name}",
+    newResult: "Nytt resultat!",
+    finished: "Fullført",
+    viewAll: "Se alle ({n})"
   }
 };
 

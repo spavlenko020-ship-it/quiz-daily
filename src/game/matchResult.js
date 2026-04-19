@@ -356,6 +356,10 @@ export function renderMatchResult(container, match, currentPlayerId, platform, c
   root.appendChild(grid);
 
   // REWARDS — compute + apply idempotently.
+  // Snapshot claimed-state BEFORE applying so we can decide whether this is a
+  // "fresh completion" render (show Watch-ad) or a "read-only" revisit from
+  // the inbox (hide Watch-ad — rewards already claimed earlier).
+  const alreadyClaimedBefore = match.rewardsClaimed === true;
   const reward = calculateMatchReward(match, currentPlayerId);
   const applied = applyMatchReward(match, reward);
   // Persist (flush immediately so refresh or next session sees the flag).
@@ -380,8 +384,10 @@ export function renderMatchResult(container, match, currentPlayerId, platform, c
   rewardsWrap.appendChild(rewardsCaption);
   root.appendChild(rewardsWrap);
 
-  // REWARDED AD — show only if base reward > 0 AND not already doubled.
-  if (reward.xp > 0 && !match.rewardsDoubled) {
+  // REWARDED AD — show only on the FIRST render after match completion.
+  // Hidden when the user revisits an already-claimed match from the inbox
+  // (alreadyClaimedBefore=true) OR after they've already doubled.
+  if (reward.xp > 0 && !alreadyClaimedBefore && !match.rewardsDoubled) {
     const adBtn = document.createElement('button');
     adBtn.type = 'button';
     adBtn.className = 'qd-matchresult-ad';

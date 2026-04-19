@@ -60,16 +60,24 @@ const platform = {
 
   async getContextData() {
     try {
-      const raw = localStorage.getItem('mock_match_ctx');
-      console.log('[web mock] getContextData →', raw ? 'found' : 'null');
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
+      const rawMatches = localStorage.getItem('mock_matches');
+      const rawLegacy = localStorage.getItem('mock_match_ctx');
+      const matches = rawMatches ? JSON.parse(rawMatches) : {};
+      const legacyMatch = rawLegacy || null;
+      console.log('[web mock] getContextData →', {
+        matchCount: matches && typeof matches === 'object' ? Object.keys(matches).length : 0,
+        legacy: !!legacyMatch
+      });
+      return { matches: matches && typeof matches === 'object' ? matches : {}, legacyMatch };
+    } catch (e) { return { matches: {}, legacyMatch: null }; }
   },
 
-  async setContextData(matchJson) {
+  async setContextData(payload) {
     try {
-      localStorage.setItem('mock_match_ctx', JSON.stringify(matchJson));
-      console.log('[web mock] setContextData saved');
+      const obj = (payload && payload.matches) ? payload.matches : {};
+      localStorage.setItem('mock_matches', JSON.stringify(obj));
+      if (payload && payload.clearLegacy) localStorage.removeItem('mock_match_ctx');
+      console.log('[web mock] setContextData saved', Object.keys(obj).length, 'match(es)');
       return true;
     } catch (e) { return false; }
   },
