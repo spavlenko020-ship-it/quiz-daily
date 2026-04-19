@@ -24,6 +24,8 @@ function prefersReducedMotion() {
 const confettiFn = (typeof window !== 'undefined' && typeof window.confetti === 'function')
   ? window.confetti : null;
 
+debugLog('canvas-confetti status:', confettiFn ? 'LOADED' : 'MISSING — vendored script failed');
+
 function safeConfetti(opts) {
   if (!confettiFn) return;
   if (prefersReducedMotion()) return;
@@ -60,7 +62,7 @@ function injectStyles() {
       opacity: 0;
       text-shadow: 0 2px 0 rgba(0,0,0,0.3), 0 0 12px currentColor;
       animation: qdOnFireEnter 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
-                 qdOnFireExit 400ms ease-out 1500ms forwards;
+                 qdOnFireExit 400ms ease-out 2300ms forwards;
     }
     .qd-on-fire-3 { color: #F59E0B; }
     .qd-on-fire-5 { color: #06B6D4; }
@@ -123,7 +125,7 @@ function injectStyles() {
        ====================================================================== */
     .qd-golden-pulse {
       position: relative;
-      animation: qdGoldenPulse 1800ms ease-in-out infinite;
+      animation: qdGoldenPulse 2400ms ease-in-out infinite;
     }
     .qd-golden-pulse::before {
       content: '';
@@ -133,7 +135,7 @@ function injectStyles() {
       filter: blur(12px);
       z-index: -1;
       pointer-events: none;
-      animation: qdGoldenBreath 1800ms ease-in-out infinite;
+      animation: qdGoldenBreath 2400ms ease-in-out infinite;
     }
     @keyframes qdGoldenPulse {
       0%,100% {
@@ -340,7 +342,7 @@ export function showOnFire(root, streakCount) {
   document.body.appendChild(el);
   try { playWhoosh(); } catch (e) { /* ignore */ }
 
-  const totalLifetime = prefersReducedMotion() ? 1600 : 2000;
+  const totalLifetime = prefersReducedMotion() ? 2500 : 2800;
   setTimeout(() => { try { el.remove(); } catch (e) {} }, totalLifetime);
 }
 
@@ -355,6 +357,22 @@ export function triggerConfetti(container, variant = 'win') {
   if (!confettiFn) { debugLog('confetti unavailable — skipping'); return; }
   if (prefersReducedMotion()) { debugLog('confetti skipped (reduced motion)'); return; }
   debugLog('confetti variant', variant);
+
+  if (variant === 'complete') {
+    safeConfetti({
+      particleCount: 60, spread: 75, origin: { y: 0.65 },
+      colors: ['#10B981','#FFD700','#FFFFFF'], ticks: 200, startVelocity: 35
+    });
+    setTimeout(() => safeConfetti({
+      particleCount: 30, spread: 60, origin: { x: 0.3, y: 0.7 },
+      angle: 75, colors: ['#10B981','#FFD700'], startVelocity: 35
+    }), 250);
+    setTimeout(() => safeConfetti({
+      particleCount: 30, spread: 60, origin: { x: 0.7, y: 0.7 },
+      angle: 105, colors: ['#10B981','#FFD700'], startVelocity: 35
+    }), 500);
+    return;
+  }
 
   if (variant === 'win') {
     safeConfetti({

@@ -465,6 +465,8 @@ function startGame(isDaily) {
           await import('./ui/juiceEffects.js');
         const isPerfect = quiz.correctCount === quiz.totalQuestions;
         const isNewBest = bestResult && bestResult.isNew === true;
+        const accuracy = quiz.totalQuestions > 0 ? quiz.correctCount / quiz.totalQuestions : 0;
+        const isGoodGame = accuracy >= 0.6;
         const scoreEl = app.querySelector('.qd-finish-score-big');
 
         if (isPerfect) {
@@ -474,6 +476,8 @@ function startGame(isDaily) {
         } else if (isNewBest) {
           triggerConfetti(app, 'record');
           if (scoreEl) goldenPulse(scoreEl);
+        } else if (isGoodGame) {
+          triggerConfetti(app, 'complete');
         }
       } catch (e) { /* juice never breaks the flow */ }
     })();
