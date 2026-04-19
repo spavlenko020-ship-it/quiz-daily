@@ -1,6 +1,7 @@
 import { theme } from './theme.js';
 import { t } from '../i18n/i18n.js';
-import { playClick } from './sounds.js';
+import { playClick, playFanfare } from './sounds.js';
+import { unlockGoldenFlash, unlockParticleBurst, unlockLevelBounce } from './juiceEffects.js';
 
 const STYLE_ID = 'qd-unlock-overlay-styles';
 
@@ -123,4 +124,12 @@ export function showUnlockOverlay(level, onDismiss) {
 
   overlay.appendChild(card);
   document.body.appendChild(overlay);
+
+  // --- Stage 7.2 juice: golden flash + particle burst + level-icon bounce +
+  // fanfare. All helpers internally respect prefers-reduced-motion (flash +
+  // particles short-circuit; bounce keeps the icon at final scale via CSS).
+  try { unlockGoldenFlash(); } catch (e) { /* ignore */ }
+  try { unlockParticleBurst(); } catch (e) { /* ignore */ }
+  try { unlockLevelBounce(icon); } catch (e) { /* ignore */ }
+  try { playFanfare(); } catch (e) { /* ignore */ }
 }

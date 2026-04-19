@@ -104,7 +104,11 @@ export const translations = {
     rewardFreeFifty2: "2 free 50/50 daily",
     rewardStreakFreeze: "Streak Freeze (1/week)",
     rewardProBadge: "Pro Badge 👑",
-    claim: "Claim"
+    claim: "Claim",
+    onFire: "🔥 ON FIRE!",
+    unstoppable: "⚡ UNSTOPPABLE!",
+    legendary: "👑 LEGENDARY!",
+    perfectGame: "PERFECT GAME ✨"
   },
   uk: {
     appName: "Щоденний Квіз",
@@ -211,7 +215,11 @@ export const translations = {
     rewardFreeFifty2: "2 безкоштовних 50/50 щодня",
     rewardStreakFreeze: "Заморозка серії (1/тиждень)",
     rewardProBadge: "Значок Pro 👑",
-    claim: "Отримати"
+    claim: "Отримати",
+    onFire: "🔥 У ВОГНІ!",
+    unstoppable: "⚡ НЕСПИНЕННИЙ!",
+    legendary: "👑 ЛЕГЕНДАРНО!",
+    perfectGame: "ІДЕАЛЬНА ГРА ✨"
   },
   no: {
     appName: "Daglig Quiz",
@@ -318,7 +326,11 @@ export const translations = {
     rewardFreeFifty2: "2 gratis 50/50 daglig",
     rewardStreakFreeze: "Streak Freeze (1/uke)",
     rewardProBadge: "Pro-merke 👑",
-    claim: "Krev"
+    claim: "Krev",
+    onFire: "🔥 I GANG!",
+    unstoppable: "⚡ USTOPPELIG!",
+    legendary: "👑 LEGENDARISK!",
+    perfectGame: "PERFEKT SPILL ✨"
   }
 };
 

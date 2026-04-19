@@ -485,4 +485,26 @@ export function renderMatchResult(container, match, currentPlayerId, platform, c
       applyProBadgeToScore(youCard.parentElement || youCard, 'PRO');
     }
   }
+
+  // Stage 7.2 juice — on win: confetti, screen shake, gold aura around YOU card.
+  // On loss: light screen shake only (sharper feedback, no celebration).
+  if (isWin) {
+    (async () => {
+      try {
+        const { triggerConfetti, screenShake, matchWinAura, goldenPulse } =
+          await import('../ui/juiceEffects.js');
+        triggerConfetti(root, 'win');
+        screenShake(root, 'medium');
+        matchWinAura(youCard);
+        goldenPulse(youScoreEl);
+      } catch (e) { /* juice never breaks the flow */ }
+    })();
+  } else if (slot && winner && winner !== 'tie' && winner !== slot) {
+    (async () => {
+      try {
+        const { screenShake } = await import('../ui/juiceEffects.js');
+        screenShake(root, 'weak');
+      } catch (e) { /* ignore */ }
+    })();
+  }
 }

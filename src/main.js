@@ -454,6 +454,29 @@ function startGame(isDaily) {
     if (hasProBadge(xpResult.newLevel || _getLevelFromXP(xpResult.newTotal))) {
       applyProBadgeToScore(app, 'PRO');
     }
+
+    // Stage 7.2 juice — layered on top of the already-rendered Result.
+    // Order matters: perfect-game is the biggest payload, then new-best,
+    // then the XP level-up confetti already handled by renderFinishScreen
+    // internally. Each helper is idempotent and respects reduced-motion.
+    (async () => {
+      try {
+        const { triggerConfetti, goldenPulse, perfectGameBackdrop } =
+          await import('./ui/juiceEffects.js');
+        const isPerfect = quiz.correctCount === quiz.totalQuestions;
+        const isNewBest = bestResult && bestResult.isNew === true;
+        const scoreEl = app.querySelector('.qd-finish-score-big');
+
+        if (isPerfect) {
+          perfectGameBackdrop(app);
+          triggerConfetti(app, 'perfect');
+          if (scoreEl) goldenPulse(scoreEl);
+        } else if (isNewBest) {
+          triggerConfetti(app, 'record');
+          if (scoreEl) goldenPulse(scoreEl);
+        }
+      } catch (e) { /* juice never breaks the flow */ }
+    })();
   });
 }
 

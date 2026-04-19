@@ -5,6 +5,7 @@ import { getBestScore, getStreak, isDailyCompletedToday, msUntilTomorrow, getTod
 import { getFreeDailyQuota, getTodayFreeUsed, hasStreakFreeze, getStreakFreezeAvailable, hasPendingStreakFreezeToast, clearPendingStreakFreezeToast, getPendingUnlock, markUnlockAnnounced } from './powerups.js';
 import { QUESTIONS_PER_SESSION } from './quiz.js';
 import { playClick, playWhoosh } from '../ui/sounds.js';
+import { pulseStreakFlame } from '../ui/juiceEffects.js';
 
 const STYLE_ID = 'qd-home-styles';
 let lastCallbacks = null;
@@ -778,6 +779,10 @@ export function renderHomeScreen(container, callbacks = {}) {
       <div class="qd-home-stat-value qd-home-streak-inline"></div>
     `;
     streakCard.querySelector('.qd-home-stat-value').textContent = formatStreakDays(streak, getLanguage());
+    // Stage 7.2: pulsing flame when the streak is already meaningful (≥3 days).
+    if (streak >= 3) {
+      try { pulseStreakFlame(streakCard.querySelector('.qd-home-stat-icon')); } catch (e) {}
+    }
   } else {
     streakCard.innerHTML = `
       <div class="qd-home-stat-icon qd-home-stat-icon-dim">${streakIconChar}</div>

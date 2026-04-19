@@ -1,5 +1,6 @@
 import { renderPowerupBar } from './powerupBar.js';
 import { getLevelFromXP, getXP } from '../game/stats.js';
+import { showOnFire } from './juiceEffects.js';
 
 // Observes the quiz host element. Whenever `renderQuizScreen` (or the match
 // quiz wrapper) rebuilds the per-question DOM, we detect the freshly inserted
@@ -36,6 +37,23 @@ export function attachPowerupBar(quizScreenRoot, quizInstance, platformCtx) {
   if (!quizScreenRoot || !quizInstance) return { detach: () => {} };
   const level = getLevelFromXP(getXP());
 
+  // ON FIRE tracking — we watch the streak *between* question renders. When
+  // the observer sees a new .qd-timer-track (= new question begins), the
+  // previous answer has just been scored, so quiz.currentCorrectStreak is the
+  // streak *after* that answer. We fire at 3, 5, 7 — once per milestone per
+  // session via a local Set.
+  const firedMilestones = new Set();
+  function maybeFireOnFire() {
+    try {
+      const streak = quizInstance.currentCorrectStreak;
+      if (typeof streak !== 'number') return;
+      if ((streak === 3 || streak === 5 || streak === 7) && !firedMilestones.has(streak)) {
+        firedMilestones.add(streak);
+        showOnFire(quizScreenRoot, streak);
+      }
+    } catch (e) { /* ignore */ }
+  }
+
   function injectBarForCurrentQuestion() {
     // Avoid double-injection if already present.
     const existingBar = quizScreenRoot.querySelector('.qd-pwrbar');
@@ -60,6 +78,9 @@ export function attachPowerupBar(quizScreenRoot, quizInstance, platformCtx) {
         hidePairOfWrongButtons(quizScreenRoot, q.correct);
       }
     });
+
+    // New question = previous answer was just scored. Check for ON FIRE.
+    maybeFireOnFire();
   }
 
   // Initial try — the first question might already be rendered.
