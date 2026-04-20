@@ -1,5 +1,6 @@
 import { t } from '../i18n/i18n.js';
 import { playWhoosh } from './sounds.js';
+import { juiceLevel } from './deviceCapability.js';
 
 // Central VFX module (Stage 7.2 rework). Premium effects powered by vendored
 // canvas-confetti 1.9.3 (public/vendor/confetti.browser.min.js, referenced
@@ -10,12 +11,20 @@ import { playWhoosh } from './sounds.js';
 
 const STYLE_ID = 'qd-juice-effects-styles';
 
-// Stage 7.4b: mobile GPUs can't keep up with 200-particle bursts — scale
-// particle counts to 50% and shorten `ticks` (per-particle lifetime) so we
-// stay inside the mobile frame budget without changing animation timings.
-const isMobile = typeof navigator !== 'undefined'
-  && /Android|iPhone|iPad|iPod|Mobile|IEMobile/i.test(navigator.userAgent);
-function scaleCount(n) { return isMobile ? Math.ceil(n * 0.5) : n; }
+// Stage 7.5: adaptive scaling driven by deviceCapability.detectJuiceLevel().
+// `full` keeps the premium-grade 100-200-particle bursts; `lite` drops to
+// ~30% for mid-tier mobile GPUs; `off` disables particle work entirely
+// (confetti becomes a no-op). Ticks scale 50% on `lite`, 0 on `off`.
+function scaleCount(n) {
+  if (juiceLevel === 'off') return 0;
+  if (juiceLevel === 'lite') return Math.max(8, Math.ceil(n * 0.3));
+  return n;
+}
+function scaleTicks(n) {
+  if (juiceLevel === 'off') return 0;
+  if (juiceLevel === 'lite') return Math.ceil(n * 0.5);
+  return n;
+}
 
 // DEBUG flag is statically replaced by Vite so the body of `if (DEBUG)`
 // branches is dead-code-eliminated in production — no console.log noise ships.
@@ -363,12 +372,13 @@ export function triggerConfetti(container, variant = 'win') {
   injectStyles();
   if (!confettiFn) { debugLog('confetti unavailable — skipping'); return; }
   if (prefersReducedMotion()) { debugLog('confetti skipped (reduced motion)'); return; }
+  if (juiceLevel === 'off') { debugLog('confetti skipped (juiceLevel=off)'); return; }
   debugLog('confetti variant', variant);
 
   if (variant === 'complete') {
     safeConfetti({
       particleCount: scaleCount(60), spread: 75, origin: { y: 0.65 },
-      colors: ['#10B981','#FFD700','#FFFFFF'], ticks: isMobile ? 150 : 200, startVelocity: 35
+      colors: ['#10B981','#FFD700','#FFFFFF'], ticks: scaleTicks(200), startVelocity: 35
     });
     setTimeout(() => safeConfetti({
       particleCount: scaleCount(30), spread: 60, origin: { x: 0.3, y: 0.7 },
@@ -384,7 +394,7 @@ export function triggerConfetti(container, variant = 'win') {
   if (variant === 'win') {
     safeConfetti({
       particleCount: scaleCount(80), spread: 70, origin: { y: 0.6 },
-      colors: ['#FFD700','#10B981','#FFFFFF'], ticks: isMobile ? 180 : 250
+      colors: ['#FFD700','#10B981','#FFFFFF'], ticks: scaleTicks(250)
     });
     setTimeout(() => safeConfetti({
       particleCount: scaleCount(50), spread: 100, origin: { x: 0, y: 0.7 },
@@ -401,7 +411,7 @@ export function triggerConfetti(container, variant = 'win') {
     safeConfetti({
       particleCount: scaleCount(150), spread: 160, origin: { y: 0.3 },
       colors: ['#FFD700','#F59E0B','#FBBF24','#FFFFFF'],
-      gravity: 0.65, startVelocity: 40, ticks: isMobile ? 220 : 300
+      gravity: 0.65, startVelocity: 40, ticks: scaleTicks(300)
     });
     return;
   }
@@ -410,7 +420,7 @@ export function triggerConfetti(container, variant = 'win') {
     safeConfetti({
       particleCount: scaleCount(200), spread: 360, origin: { x: 0.5, y: 0.5 },
       colors: ['#FF006E','#FB5607','#FFBE0B','#8338EC','#3A86FF','#06FFA5'],
-      startVelocity: 35, ticks: isMobile ? 180 : 250
+      startVelocity: 35, ticks: scaleTicks(250)
     });
     setTimeout(() => safeConfetti({
       particleCount: scaleCount(80), spread: 90, origin: { x: 0, y: 0.6 },
@@ -535,13 +545,14 @@ export function unlockGoldenFlash() {
 
 export function unlockParticleBurst() {
   injectStyles();
+  if (juiceLevel === 'off') return;
   safeConfetti({
     particleCount: scaleCount(100),
     spread: 360,
     origin: { x: 0.5, y: 0.5 },
     startVelocity: 30,
     gravity: 0.3,
-    ticks: isMobile ? 150 : 200,
+    ticks: scaleTicks(200),
     colors: ['#FFD700','#FFA500','#FF6B35','#F59E0B','#FFFFFF'],
     shapes: ['circle','star']
   });

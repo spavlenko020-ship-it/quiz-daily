@@ -6,6 +6,8 @@ import { getFreeDailyQuota, getTodayFreeUsed, hasStreakFreeze, getStreakFreezeAv
 import { QUESTIONS_PER_SESSION } from './quiz.js';
 import { playClick, playWhoosh } from '../ui/sounds.js';
 import { pulseStreakFlame } from '../ui/juiceEffects.js';
+import { hapticMedium } from '../ui/haptics.js';
+import { markAsScreen } from '../ui/screenTransition.js';
 
 const STYLE_ID = 'qd-home-styles';
 let lastCallbacks = null;
@@ -769,6 +771,7 @@ export function renderHomeScreen(container, callbacks = {}) {
 
   const root = document.createElement('div');
   root.className = 'qd-home';
+  markAsScreen(root);
 
   const top = document.createElement('div');
   top.className = 'qd-home-top';
@@ -951,6 +954,7 @@ export function renderHomeScreen(container, callbacks = {}) {
     playBtn.textContent = t('playButton');
     playBtn.addEventListener('click', () => {
       playClick();
+      try { hapticMedium(); } catch (e) {}
       if (onPlayDaily) onPlayDaily();
     });
     root.appendChild(playBtn);
@@ -1071,9 +1075,9 @@ export function renderHomeScreen(container, callbacks = {}) {
   quickPlayWrap.className = 'qd-home-quickplay-wrap';
   const quickPlayBtn = document.createElement('button');
   quickPlayBtn.type = 'button';
-  quickPlayBtn.className = dailyDone
+  quickPlayBtn.className = (dailyDone
     ? 'qd-home-quickplay qd-home-quickplay--primary'
-    : 'qd-home-quickplay';
+    : 'qd-home-quickplay') + ' qd-premium-btn';
   quickPlayBtn.textContent = t('quickPlay');
   quickPlayBtn.addEventListener('click', () => {
     playClick();

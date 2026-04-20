@@ -1,6 +1,8 @@
 import { theme } from '../ui/theme.js';
 import { t } from '../i18n/i18n.js';
 import { playClick, playWhoosh } from '../ui/sounds.js';
+import { hapticLight } from '../ui/haptics.js';
+import { markAsScreen } from '../ui/screenTransition.js';
 
 // First-time-only 3-slide intro carousel. Gated by localStorage
 // `quiz_onboarded` flag set in main.js on completion. Non-intrusive — it
@@ -156,7 +158,7 @@ export function renderOnboarding(container, onComplete) {
 
   const skip = document.createElement('button');
   skip.type = 'button';
-  skip.className = 'qd-onb-skip';
+  skip.className = 'qd-onb-skip qd-premium-btn';
   skip.textContent = t('onbSkip') || 'Skip';
 
   const track = document.createElement('div');
@@ -201,7 +203,7 @@ export function renderOnboarding(container, onComplete) {
 
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'qd-onb-btn';
+  btn.className = 'qd-onb-btn qd-premium-btn';
 
   footer.appendChild(dots);
   footer.appendChild(btn);
@@ -210,6 +212,7 @@ export function renderOnboarding(container, onComplete) {
   card.appendChild(track);
   card.appendChild(footer);
   backdrop.appendChild(card);
+  markAsScreen(card);
   document.body.appendChild(backdrop);
 
   let idx = 0;
@@ -237,6 +240,7 @@ export function renderOnboarding(container, onComplete) {
 
   btn.addEventListener('click', () => {
     playClick();
+    try { hapticLight(); } catch (e) {}
     if (idx < TOTAL_SLIDES - 1) {
       idx += 1;
       try { playWhoosh(); } catch (e) {}

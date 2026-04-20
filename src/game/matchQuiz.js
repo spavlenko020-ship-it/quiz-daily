@@ -3,6 +3,7 @@ import { renderQuizScreen } from './screens.js';
 import { getLanguage } from '../i18n/i18n.js';
 import { playClick } from '../ui/sounds.js';
 import { attachPowerupBar } from '../ui/quizHooks.js';
+import { markAsScreen } from '../ui/screenTransition.js';
 
 const DIFFICULTY_MULTIPLIER = { easy: 1, medium: 1.25, hard: 1.5 };
 const STYLE_ID = 'qd-match-quiz-styles';
@@ -142,6 +143,7 @@ export function renderMatchQuizScreen(container, match, platform, callbacks = {}
 
   const wrapper = document.createElement('div');
   wrapper.className = 'qd-match-wrapper';
+  markAsScreen(wrapper);
 
   // Match banner — persists across question re-renders because renderQuizScreen
   // only wipes its own host element (not our wrapper).

@@ -9,6 +9,7 @@ import {
   getTodayFreeUsed
 } from '../game/powerups.js';
 import { getCoins, addCoins } from '../game/stats.js';
+import { areAdsEnabled } from '../config/flags.js';
 
 const STYLE_ID = 'qd-powerup-bar-styles';
 
@@ -255,28 +256,32 @@ export function renderPowerupBar(hostEl, ctx) {
     });
     popup.appendChild(coinsBtn);
 
-    const adBtn = document.createElement('button');
-    adBtn.type = 'button';
-    adBtn.className = 'qd-pwr-popup-btn qd-pwr-popup-ad';
-    adBtn.textContent = `📺 ${t('free')}`;
-    adBtn.addEventListener('click', async (ev) => {
-      ev.stopPropagation();
-      playClick();
-      adBtn.disabled = true;
-      let ok = false;
-      try {
-        if (platform && typeof platform.showAd === 'function') {
-          ok = await platform.showAd('rewarded');
+    // Stage 7.5 — ad-gated "watch for free" path only surfaces when ads are
+    // enabled. Coin-cost path is always available.
+    if (areAdsEnabled()) {
+      const adBtn = document.createElement('button');
+      adBtn.type = 'button';
+      adBtn.className = 'qd-pwr-popup-btn qd-pwr-popup-ad';
+      adBtn.textContent = `📺 ${t('free')}`;
+      adBtn.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        playClick();
+        adBtn.disabled = true;
+        let ok = false;
+        try {
+          if (platform && typeof platform.showAd === 'function') {
+            ok = await platform.showAd('rewarded');
+          }
+        } catch (err) { ok = false; }
+        if (ok) {
+          fire('ad');
+        } else {
+          flashToast(t('adUnavailable'));
+          closePopup();
         }
-      } catch (err) { ok = false; }
-      if (ok) {
-        fire('ad');
-      } else {
-        flashToast(t('adUnavailable'));
-        closePopup();
-      }
-    });
-    popup.appendChild(adBtn);
+      });
+      popup.appendChild(adBtn);
+    }
 
     const cancelBtn = document.createElement('button');
     cancelBtn.type = 'button';

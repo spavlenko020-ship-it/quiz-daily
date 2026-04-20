@@ -1,4 +1,5 @@
 import { showRewardedAd, showInterstitialPopup } from './monetag.js';
+import { areAdsEnabled } from '../config/flags.js';
 
 function isMobile() {
   return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -28,6 +29,7 @@ const platform = {
     return { via: 'unavailable' };
   },
   async showAd(type) {
+    if (!areAdsEnabled()) { console.log('[ads] disabled via feature flag'); return false; }
     if (type === 'rewarded') return await showRewardedAd();
     if (type === 'popup') return await showInterstitialPopup();
     return false;

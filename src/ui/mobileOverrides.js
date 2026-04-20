@@ -1,14 +1,22 @@
-// Stage 7.4c — mobile-only CSS overrides bumping font sizes + tap-target
-// height on real mobile user-agents. Imported synchronously at the top of
-// main.js so the stylesheet is in the cascade before any screen renders —
-// no flash-of-small-text. Desktop path is a silent no-op (the only work is
-// a UA regex check that matches `false`).
+// Stage 7.5 — mobile-only CSS overrides + the canonical class-name registry
+// shared with the rest of the app.
 //
-// Selectors are the REAL class names from src/game/screens.js:
-//   .qd-question            — question text element
-//   .qd-answer              — answer button (min-height matters for thumbs)
-//   .qd-answer-text         — label span inside the button
-//   .qd-finish-score-big    — big score number on Result
+// `screens.js` (LOCKED) defines the quiz/finish DOM structure. We mirror its
+// class names here once so every non-screens module (mobileOverrides,
+// screenTransition MutationObserver, safety-net querySelector) reads from a
+// single source of truth — if screens.js ever changes a class, only this
+// file needs an update.
+
+export const QUIZ_CLASSES = {
+  quizRoot:      'qd-root',               // quiz play-screen root
+  question:      'qd-question',           // question text block
+  answer:        'qd-answer',              // answer <button>
+  answerText:    'qd-answer-text',        // label span inside answer
+  finishRoot:    'qd-finish',              // finish-screen root
+  finishScore:   'qd-finish-score-big',    // big score number
+  finishButton:  'qd-btn-primary-hero',    // Keep Playing (finish primary)
+  matchResultRoot: 'qd-matchresult'        // match result root
+};
 
 const STYLE_ID = 'qd-mobile-overrides';
 
@@ -22,13 +30,24 @@ export function injectMobileOverrides() {
   const style = document.createElement('style');
   style.id = STYLE_ID;
   style.textContent = `
-    .qd-question { font-size: 1.22rem !important; line-height: 1.38 !important; }
-    .qd-answer {
-      min-height: 56px !important;
-      padding: 14px 16px !important;
+    .${QUIZ_CLASSES.question} {
+      font-size: 1.45rem !important;
+      line-height: 1.4 !important;
+      font-weight: 600 !important;
     }
-    .qd-answer-text { font-size: 1.06rem !important; line-height: 1.3 !important; }
-    .qd-finish-score-big { font-size: 5rem !important; }
+    .${QUIZ_CLASSES.answer} {
+      min-height: 62px !important;
+      padding: 16px 18px !important;
+    }
+    .${QUIZ_CLASSES.answerText} {
+      font-size: 1.18rem !important;
+      line-height: 1.35 !important;
+      font-weight: 600 !important;
+    }
+    .${QUIZ_CLASSES.finishScore} {
+      font-size: 3rem !important;
+      font-weight: 800 !important;
+    }
   `;
   document.head.appendChild(style);
 }

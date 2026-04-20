@@ -6,6 +6,9 @@ import { saveMatchImmediate } from './matchStore.js';
 import { getLevelFromXP, getXP } from './stats.js';
 import { hasProBadge } from './powerups.js';
 import { applyProBadgeToScore } from '../ui/quizHooks.js';
+import { areAdsEnabled } from '../config/flags.js';
+import { hapticHeavy } from '../ui/haptics.js';
+import { markAsScreen } from '../ui/screenTransition.js';
 
 const STYLE_ID = 'qd-match-result-styles';
 
@@ -299,6 +302,7 @@ export function renderMatchResult(container, match, currentPlayerId, platform, c
 
   const root = document.createElement('div');
   root.className = 'qd-matchresult';
+  markAsScreen(root);
 
   // Verdict from current player's perspective.
   const slot = match.getPlayerSlot(currentPlayerId);
@@ -319,6 +323,10 @@ export function renderMatchResult(container, match, currentPlayerId, platform, c
   verdict.className = `qd-matchresult-verdict ${verdictCls}`;
   verdict.textContent = t(verdictKey);
   root.appendChild(verdict);
+
+  // Stage 7.5 haptic — heavy impact on a match win (celebration mirror of
+  // the solo new-best haptic).
+  if (isWin) { try { hapticHeavy(); } catch (e) {} }
 
   // Score cards — YOU always left.
   const myScore = slot === 'a' ? match.playerAScore : match.playerBScore;
@@ -389,8 +397,9 @@ export function renderMatchResult(container, match, currentPlayerId, platform, c
 
   // REWARDED AD — show only on the FIRST render after match completion.
   // Hidden when the user revisits an already-claimed match from the inbox
-  // (alreadyClaimedBefore=true) OR after they've already doubled.
-  if (reward.xp > 0 && !alreadyClaimedBefore && !match.rewardsDoubled) {
+  // (alreadyClaimedBefore=true), already doubled, OR ads are disabled via
+  // the Stage 7.5 launch feature flag (areAdsEnabled()=false by default).
+  if (reward.xp > 0 && !alreadyClaimedBefore && !match.rewardsDoubled && areAdsEnabled()) {
     const adBtn = document.createElement('button');
     adBtn.type = 'button';
     adBtn.className = 'qd-matchresult-ad';
@@ -466,7 +475,7 @@ export function renderMatchResult(container, match, currentPlayerId, platform, c
 
   const backLink = document.createElement('button');
   backLink.type = 'button';
-  backLink.className = 'qd-matchresult-backlink';
+  backLink.className = 'qd-matchresult-backlink qd-premium-btn';
   backLink.textContent = t('backToHome');
   backLink.addEventListener('click', () => {
     playClick();

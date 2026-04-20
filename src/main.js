@@ -1,7 +1,18 @@
 import { injectMobileOverrides } from './ui/mobileOverrides.js';
+import { areAdsEnabled } from './config/flags.js';
+import { detectJuiceLevel } from './ui/deviceCapability.js';
+import { injectTransitionStyles, startScreenObserver } from './ui/screenTransition.js';
+import { injectPremiumButtonStyle } from './ui/premiumButtons.js';
+import { hapticHeavy } from './ui/haptics.js';
 // Must run before any other UI module injects styles so our !important
 // font overrides land in the cascade after the default stylesheets.
 injectMobileOverrides();
+// Boot-time capability benchmark (async — juiceLevel starts 'full' and may
+// downgrade to 'lite'/'off' after ~1 second of rAF sampling).
+detectJuiceLevel();
+// Screen-transition + premium-button styles are injected globally once.
+injectTransitionStyles();
+injectPremiumButtonStyle();
 
 import { Quiz } from './game/quiz.js';
 import { renderQuizScreen, renderFinishScreen } from './game/screens.js';
@@ -17,27 +28,11 @@ import { attachPowerupBar, applyProBadgeToScore } from './ui/quizHooks.js';
 import { hasStreakFreeze, hasProBadge, getStreakFreezeAvailable, consumeStreakFreeze } from './game/powerups.js';
 import { getLevelFromXP as _getLevelFromXP } from './game/stats.js';
 
-// Stage 7.4c — inter-session ad trigger.
-// After every Nth game, show an interstitial popup at the moment the user
-// navigates AWAY from the Result screen (not during). Counter is persisted
-// so an app reload mid-game doesn't reset the cadence. Feature-flaggable
-// via `localStorage.ads_enabled = '0'` for emergency kill, and dev mode
-// only fires ads when `?ads=1` is on the URL so local testing is clean.
+// Stage 7.5 — inter-session ad trigger. Runs at Result→navigate callbacks
+// and is a no-op while `areAdsEnabled()` is false (default for launch).
+// Counter is persisted so an app reload mid-game doesn't reset the cadence.
 const GAMES_BEFORE_AD = 3;
 const GAMES_COUNTER_KEY = 'games_since_last_ad';
-const ADS_ENABLED_KEY = 'ads_enabled';
-
-function areAdsEnabled() {
-  try {
-    if (localStorage.getItem(ADS_ENABLED_KEY) === '0') return false;
-  } catch (e) { /* ignore */ }
-  if (import.meta.env.DEV) {
-    try {
-      if (!new URLSearchParams(location.search).get('ads')) return false;
-    } catch (e) { return false; }
-  }
-  return true;
-}
 
 function maybeShowInterstitial() {
   if (!areAdsEnabled()) return;
@@ -501,6 +496,8 @@ function startGame(isDaily) {
     let bestResult = null;
     try { bestResult = setBestScoreIfHigher(quiz.score); flog('2. bestResult:', bestResult); }
     catch (e) { console.error('[finish] setBestScoreIfHigher FAILED:', e && e.message, e && e.stack); }
+    // Stage 7.5 haptic — heavy impact on new personal best (celebration).
+    try { if (bestResult && bestResult.isNew) hapticHeavy(); } catch (e) {}
 
     try { if (isDaily) maybeApplyStreakFreeze(); }
     catch (e) { console.error('[finish] maybeApplyStreakFreeze FAILED:', e && e.message, e && e.stack); }
@@ -636,6 +633,12 @@ function showStoredDailyResult() {
   });
 }
 
+// Stage 7.5 — additive mobile audio boost, armed on the first user gesture so
+// the browser is already inside a click/touch context when Tone autoplays.
+document.addEventListener('pointerdown', () => {
+  import('./ui/audioBoost.js').then((m) => m.applyMobileAudioBoost()).catch(() => {});
+}, { once: true, passive: true });
+
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[boot] Telegram WebApp available:',
     !!(window.Telegram && window.Telegram.WebApp),
@@ -649,6 +652,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('[platform] using adapter:', platform.name);
   if (import.meta.env.DEV) { window.__platform = platform; }
   app = document.querySelector('#app');
+  // Start the scoped screen observer so locked screens.js (renderQuizScreen /
+  // renderFinishScreen) also get the fade-in + z-index defense.
+  startScreenObserver();
   initAudio();
   renderLangSwitcher();
   renderSoundToggle();

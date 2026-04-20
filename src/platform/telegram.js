@@ -1,4 +1,5 @@
 import { showRewardedAd, showInterstitialPopup } from './monetag.js';
+import { areAdsEnabled } from '../config/flags.js';
 
 // Telegram Mini App platform adapter (Stage 7.4a).
 // SDK loaded via official live CDN in index.html (telegram.org/js/telegram-web-app.js) —
@@ -156,6 +157,7 @@ const platform = {
 
   // --- stubs for Stage 7.5b+ ---
   async showAd(type) {
+    if (!areAdsEnabled()) { console.log('[ads] disabled via feature flag'); return false; }
     if (type === 'rewarded') return await showRewardedAd();
     if (type === 'popup') return await showInterstitialPopup();
     return false;
