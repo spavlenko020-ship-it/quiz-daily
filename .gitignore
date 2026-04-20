@@ -12,3 +12,4 @@ npm-debug.log*
 .vite/
 .cache/
 *.zip
+tmp/
