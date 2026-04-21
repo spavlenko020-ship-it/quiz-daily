@@ -25,6 +25,7 @@ import { initAudio } from './ui/sounds.js';
 import { renderSoundToggle } from './ui/soundToggle.js';
 import { renderBackground } from './ui/background.js';
 import { injectPremiumChallengeStyles, startChallengeIconObserver } from './ui/premiumChallenge.js';
+import { startRippleObserver } from './ui/rippleEffect.js';
 import { attachPowerupBar, applyProBadgeToScore } from './ui/quizHooks.js';
 import { hasStreakFreeze, hasProBadge, getStreakFreezeAvailable, consumeStreakFreeze } from './game/powerups.js';
 import { getLevelFromXP as _getLevelFromXP } from './game/stats.js';
@@ -650,6 +651,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderBackground();
   injectPremiumChallengeStyles();
   startChallengeIconObserver();
+  startRippleObserver();
   platform = await detectPlatform();
   await platform.init();
   console.log('[platform] using adapter:', platform.name);
