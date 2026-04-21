@@ -1,5 +1,6 @@
 import { t, getLanguage } from '../i18n/i18n.js';
 import { formatStreakDays } from '../i18n/plural.js';
+import { playClick } from './sounds.js';
 
 function buildShareText(score, correct, total, history, streak, lang) {
   const EPOCH = new Date(2026, 0, 1).getTime();
@@ -89,9 +90,10 @@ export function openShareModal({ score, correct, total, history }) {
   document.body.appendChild(modal);
   document.getElementById('sm-preview').textContent = text;
 
-  document.getElementById('smc').onclick = () => modal.remove();
+  document.getElementById('smc').onclick = () => { try { playClick(); } catch (e) {} modal.remove(); };
   modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
   document.getElementById('smcopy').onclick = async () => {
+    try { playClick(); } catch (e) {}
     try {
       await navigator.clipboard.writeText(text);
       const btn = document.getElementById('smcopy');

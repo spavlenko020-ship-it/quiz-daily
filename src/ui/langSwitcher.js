@@ -1,4 +1,5 @@
 import { getLanguage, setLanguage, getSupportedLanguages } from '../i18n/i18n.js';
+import { playClick } from './sounds.js';
 
 const LABELS = { en: 'EN', uk: 'UA', no: 'NO' };
 
@@ -28,6 +29,7 @@ export function renderLangSwitcher() {
       min-width: 44px;
     `;
     btn.addEventListener('click', () => {
+      try { playClick(); } catch (e) {}
       if (lang !== getLanguage()) {
         setLanguage(lang);
         location.reload();
